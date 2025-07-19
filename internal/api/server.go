@@ -61,7 +61,7 @@ func (s *Server) setupRoutes() {
 		// Scraping Routes
 		api.POST("/scrape", s.scrapeWebsite)
 		api.POST("/scrape/batch", s.scrapeMultipleWebsites)
-		api.GET("/scrape/stats/:url", s.getWebsiteStats)
+		api.GET("/scrape/stats", s.getWebsiteStats)
 
 		// WebSocket for live updates
 		api.GET("/ws", s.handleWebSocket)
@@ -150,7 +150,7 @@ func (s *Server) scrapeMultipleWebsites(c *gin.Context) {
 }
 
 func (s *Server) getWebsiteStats(c *gin.Context) {
-	url := c.Param("url")
+	url := c.Query("url")
 	if url == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "URL parameter is required",

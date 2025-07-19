@@ -387,7 +387,7 @@
             showLoading('statsResult');
 
             try {
-                const response = await fetch(`/api/v1/scrape/stats/${encodeURIComponent(url)}`);
+                const response = await fetch(`/api/v1/scrape/stats?url=${encodeURIComponent(url)}`);
                 const data = await response.json();
 
                 if (response.ok) {
