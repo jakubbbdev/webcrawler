@@ -1,0 +1,120 @@
+# Labeler configuration for WebCrawler
+# Automatically labels issues and pull requests based on file changes
+
+# Bug fixes
+bug:
+  - '**/*.go'
+  - '**/*.md'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.json'
+  - '**/*.txt'
+  - '**/*.sh'
+  - '**/*.dockerfile'
+  - '**/Dockerfile*'
+
+# Documentation changes
+documentation:
+  - '**/*.md'
+  - '**/*.txt'
+  - 'docs/**/*'
+  - 'README*'
+
+# New features
+enhancement:
+  - '**/*.go'
+  - '**/*.md'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.json'
+
+# Performance improvements
+performance:
+  - '**/*.go'
+  - '**/*.md'
+
+# Security fixes
+security:
+  - '**/*.go'
+  - '**/*.md'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.json'
+  - '**/*.sh'
+  - '**/*.dockerfile'
+  - '**/Dockerfile*'
+
+# Testing
+test:
+  - '**/*_test.go'
+  - '**/*.go'
+  - '**/*.md'
+
+# CI/CD changes
+ci:
+  - '.github/**/*'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.dockerfile'
+  - '**/Dockerfile*'
+
+# Dependencies
+dependencies:
+  - 'go.mod'
+  - 'go.sum'
+  - '**/*.go'
+
+# Frontend changes
+frontend:
+  - 'templates/**/*'
+  - 'static/**/*'
+  - '**/*.html'
+  - '**/*.css'
+  - '**/*.js'
+
+# API changes
+api:
+  - 'internal/api/**/*'
+  - '**/*.go'
+
+# Scraper changes
+scraper:
+  - 'internal/scraper/**/*'
+  - '**/*.go'
+
+# Configuration changes
+config:
+  - 'config/**/*'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.json'
+  - '**/*.env*'
+
+# Breaking changes
+breaking:
+  - '**/*.go'
+  - '**/*.md'
+
+# Good first issue (for new contributors)
+good first issue:
+  - '**/*.go'
+  - '**/*.md'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.json'
+  - '**/*.txt'
+  - '**/*.sh'
+  - '**/*.dockerfile'
+  - '**/Dockerfile*'
+
+# Help wanted
+help wanted:
+  - '**/*.go'
+  - '**/*.md'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - '**/*.json'
+  - '**/*.txt'
+  - '**/*.sh'
+  - '**/*.dockerfile'
+  - '**/Dockerfile*' 

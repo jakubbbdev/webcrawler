@@ -64,9 +64,77 @@ jobs:
         version: latest
         args: --timeout=5m
 
+  dependencies:
+    name: Dependencies Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Check for outdated dependencies
+      run: go list -u -m all
+
+    - name: Check for security vulnerabilities
+      run: go list -json -deps ./... | nancy sleuth
+
+    - name: Run govulncheck
+      run: govulncheck ./...
+
+  performance:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Run benchmarks
+      run: go test -bench=. -benchmem ./...
+
+    - name: Check for memory leaks
+      run: go test -race ./...
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Check code formatting
+      run: test -z "$(gofmt -l .)"
+
+    - name: Check for unused imports
+      run: go vet ./...
+
+    - name: Check for dead code
+      run: |
+        go install honnef.co/go/tools/cmd/staticcheck@latest
+        staticcheck ./...
+
+    - name: Check cyclomatic complexity
+      run: |
+        go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+        gocyclo -over 15 .
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     steps:
     - uses: actions/checkout@v4
 
@@ -79,7 +147,51 @@ jobs:
         output: 'trivy-results.sarif'
 
     - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
-        sarif_file: 'trivy-results.sarif' 
+        sarif_file: 'trivy-results.sarif'
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Check documentation coverage
+      run: |
+        go install golang.org/x/tools/cmd/godoc@latest
+        godoc -http=:6060 &
+        sleep 5
+        curl -s http://localhost:6060/pkg/web-scraper-api/ > /dev/null
+
+    - name: Check README links
+      uses: gaurav-nelson/github-action-markdown-link-check@v1
+      with:
+        use-verbose-mode: 'yes'
+        use-quiet-mode: 'yes'
+
+  docker-test:
+    name: Docker Test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: docker build -t webcrawler:test .
+
+    - name: Test Docker image
+      run: |
+        docker run -d --name webcrawler-test -p 8080:8080 webcrawler:test
+        sleep 10
+        curl -f http://localhost:8080/health || exit 1
+        docker stop webcrawler-test
+        docker rm webcrawler-test 

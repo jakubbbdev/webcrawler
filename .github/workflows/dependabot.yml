@@ -1,0 +1,46 @@
+name: Dependabot Automation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+    - name: Dependabot metadata
+      id: metadata
+      uses: dependabot/fetch-metadata@v1
+      with:
+        github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+    - name: Enable auto-merge for Dependabot PRs
+      if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      run: gh pr merge --auto --merge "$PR_URL"
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+    - name: Auto-approve Dependabot PRs
+      if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      run: gh pr review --approve "$PR_URL"
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+    - name: Comment on Dependabot PRs
+      if: steps.metadata.outputs.update-type == 'version-update:semver-minor'
+      run: |
+        gh pr comment "$PR_URL" --body "🤖 This is a minor version update. Please review the changelog before merging."
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+    - name: Comment on major updates
+      if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+      run: |
+        gh pr comment "$PR_URL" --body "⚠️ This is a major version update. Please review carefully as it may contain breaking changes."
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}} 
