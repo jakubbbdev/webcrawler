@@ -15,31 +15,31 @@ type Config struct {
 }
 
 func Load() *Config {
-	// Standardwerte setzen
+	// Set default values
 	viper.SetDefault("PORT", 8080)
 	viper.SetDefault("LOG_LEVEL", "info")
 	viper.SetDefault("TIMEOUT", 30)
 
-	// Umgebungsvariablen lesen
+	// Read environment variables
 	viper.AutomaticEnv()
 
-	// Konfigurationsdatei lesen (falls vorhanden)
+	// Read configuration file (if present)
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("./config")
 
 	if err := viper.ReadInConfig(); err != nil {
-		// Konfigurationsdatei ist optional
-		fmt.Printf("Keine Konfigurationsdatei gefunden: %v\n", err)
+		// Configuration file is optional
+		fmt.Printf("No configuration file found: %v\n", err)
 	}
 
 	config := &Config{}
 	if err := viper.Unmarshal(config); err != nil {
-		panic(fmt.Sprintf("Konfiguration konnte nicht geladen werden: %v", err))
+		panic(fmt.Sprintf("Configuration could not be loaded: %v", err))
 	}
 
-	// Port aus Umgebungsvariable überschreiben
+	// Override port from environment variable
 	if port := os.Getenv("PORT"); port != "" {
 		if p, err := strconv.Atoi(port); err == nil {
 			config.Port = p
@@ -47,4 +47,4 @@ func Load() *Config {
 	}
 
 	return config
-} 
+}

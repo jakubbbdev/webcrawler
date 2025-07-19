@@ -13,15 +13,15 @@ func TestNewService(t *testing.T) {
 	service := NewService(logger)
 
 	if service == nil {
-		t.Fatal("Service sollte nicht nil sein")
+		t.Fatal("Service should not be nil")
 	}
 
 	if service.client == nil {
-		t.Fatal("HTTP Client sollte nicht nil sein")
+		t.Fatal("HTTP Client should not be nil")
 	}
 
 	if service.logger == nil {
-		t.Fatal("Logger sollte nicht nil sein")
+		t.Fatal("Logger should not be nil")
 	}
 }
 
@@ -34,7 +34,7 @@ func TestScrapeWebsite_InvalidURL(t *testing.T) {
 
 	_, err := service.ScrapeWebsite(ctx, "invalid-url")
 	if err == nil {
-		t.Fatal("Sollte einen Fehler für ungültige URL zurückgeben")
+		t.Fatal("Should return an error for invalid URL")
 	}
 }
 
@@ -42,13 +42,13 @@ func TestScrapeWebsite_Timeout(t *testing.T) {
 	logger := logger.New("info")
 	service := NewService(logger)
 
-	// Sehr kurzer Timeout für Test
+	// Very short timeout for test
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
 	defer cancel()
 
 	_, err := service.ScrapeWebsite(ctx, "https://httpbin.org/delay/10")
 	if err == nil {
-		t.Fatal("Sollte einen Timeout-Fehler zurückgeben")
+		t.Fatal("Should return a timeout error")
 	}
 }
 
@@ -61,11 +61,11 @@ func TestScrapeMultipleWebsites_EmptyList(t *testing.T) {
 
 	results, err := service.ScrapeMultipleWebsites(ctx, []string{})
 	if err != nil {
-		t.Fatalf("Sollte keinen Fehler für leere Liste zurückgeben: %v", err)
+		t.Fatalf("Should not return an error for empty list: %v", err)
 	}
 
 	if len(results) != 0 {
-		t.Fatalf("Sollte leere Ergebnisse zurückgeben, bekam %d", len(results))
+		t.Fatalf("Should return empty results, got %d", len(results))
 	}
 }
 
@@ -78,7 +78,7 @@ func TestGetWebsiteStats_InvalidURL(t *testing.T) {
 
 	_, err := service.GetWebsiteStats(ctx, "invalid-url")
 	if err == nil {
-		t.Fatal("Sollte einen Fehler für ungültige URL zurückgeben")
+		t.Fatal("Should return an error for invalid URL")
 	}
 }
 
@@ -97,19 +97,19 @@ func TestScrapedData_Structure(t *testing.T) {
 	}
 
 	if data.URL != "https://example.com" {
-		t.Errorf("URL sollte 'https://example.com' sein, bekam '%s'", data.URL)
+		t.Errorf("URL should be 'https://example.com', got '%s'", data.URL)
 	}
 
 	if data.Title != "Test Title" {
-		t.Errorf("Title sollte 'Test Title' sein, bekam '%s'", data.Title)
+		t.Errorf("Title should be 'Test Title', got '%s'", data.Title)
 	}
 
 	if len(data.Keywords) != 2 {
-		t.Errorf("Sollte 2 Keywords haben, bekam %d", len(data.Keywords))
+		t.Errorf("Should have 2 keywords, got %d", len(data.Keywords))
 	}
 
 	if data.StatusCode != 200 {
-		t.Errorf("Status Code sollte 200 sein, bekam %d", data.StatusCode)
+		t.Errorf("Status Code should be 200, got %d", data.StatusCode)
 	}
 }
 
@@ -125,7 +125,7 @@ func BenchmarkScrapeWebsite(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := service.ScrapeWebsite(ctx, "https://httpbin.org/html")
 		if err != nil {
-			b.Fatalf("Benchmark Fehler: %v", err)
+			b.Fatalf("Benchmark error: %v", err)
 		}
 	}
 }
@@ -141,7 +141,7 @@ func BenchmarkGetWebsiteStats(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := service.GetWebsiteStats(ctx, "https://httpbin.org/html")
 		if err != nil {
-			b.Fatalf("Benchmark Fehler: %v", err)
+			b.Fatalf("Benchmark error: %v", err)
 		}
 	}
-} 
+}

@@ -12,7 +12,7 @@ type Logger struct {
 
 func New(level string) *Logger {
 	logger := logrus.New()
-	
+
 	// Log Level setzen
 	switch level {
 	case "debug":
@@ -77,4 +77,4 @@ func (l *Logger) Fatal(args ...interface{}) {
 
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.Logger.Fatalf(format, args...)
-} 
+}

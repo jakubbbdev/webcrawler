@@ -1,18 +1,18 @@
 #!/bin/bash
 
 # WebCrawler Build Script
-# Automatisches Version-Handling und Build-Prozess
+# Automatic version handling and build process
 
 set -e
 
-# Farben für Output
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Funktionen
+# Functions
 print_info() {
     echo -e "${BLUE}ℹ️  $1${NC}"
 }
@@ -29,94 +29,94 @@ print_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# Aktuelle Version lesen
+# Read current version
 VERSION=$(cat VERSION)
 print_info "WebCrawler v$VERSION Build Script"
 
-# Build-Verzeichnis erstellen
+# Create build directory
 BUILD_DIR="build"
 mkdir -p $BUILD_DIR
 
-# Go Version prüfen
-print_info "Prüfe Go Installation..."
+# Check Go installation
+print_info "Checking Go installation..."
 if ! command -v go &> /dev/null; then
-    print_error "Go ist nicht installiert!"
+    print_error "Go is not installed!"
     exit 1
 fi
 
 GO_VERSION=$(go version | awk '{print $3}')
 print_success "Go Version: $GO_VERSION"
 
-# Dependencies installieren
-print_info "Installiere Dependencies..."
+# Install dependencies
+print_info "Installing dependencies..."
 go mod tidy
 go mod download
-print_success "Dependencies installiert"
+print_success "Dependencies installed"
 
-# Tests ausführen
-print_info "Führe Tests aus..."
+# Run tests
+print_info "Running tests..."
 if go test ./...; then
-    print_success "Alle Tests bestanden"
+    print_success "All tests passed"
 else
-    print_error "Tests fehlgeschlagen!"
+    print_error "Tests failed!"
     exit 1
 fi
 
-# Code formatieren
-print_info "Formatiere Code..."
+# Format code
+print_info "Formatting code..."
 go fmt ./...
-print_success "Code formatiert"
+print_success "Code formatted"
 
-# Build für verschiedene Plattformen
-print_info "Baue für verschiedene Plattformen..."
+# Build for different platforms
+print_info "Building for different platforms..."
 
 # Linux
-print_info "Baue für Linux..."
+print_info "Building for Linux..."
 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o $BUILD_DIR/webcrawler-linux-amd64 .
-print_success "Linux Build erstellt"
+print_success "Linux build created"
 
 # Windows
-print_info "Baue für Windows..."
+print_info "Building for Windows..."
 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o $BUILD_DIR/webcrawler-windows-amd64.exe .
-print_success "Windows Build erstellt"
+print_success "Windows build created"
 
 # macOS
-print_info "Baue für macOS..."
+print_info "Building for macOS..."
 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o $BUILD_DIR/webcrawler-darwin-amd64 .
-print_success "macOS Build erstellt"
+print_success "macOS build created"
 
 # macOS ARM64
-print_info "Baue für macOS ARM64..."
+print_info "Building for macOS ARM64..."
 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o $BUILD_DIR/webcrawler-darwin-arm64 .
-print_success "macOS ARM64 Build erstellt"
+print_success "macOS ARM64 build created"
 
-# Build-Informationen anzeigen
-print_info "Build-Informationen:"
+# Show build information
+print_info "Build information:"
 echo "Version: $VERSION"
 echo "Build Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 echo "Go Version: $GO_VERSION"
 
-# Dateigrößen anzeigen
-print_info "Build-Dateien:"
+# Show file sizes
+print_info "Build files:"
 ls -lh $BUILD_DIR/
 
-# Checksums erstellen
-print_info "Erstelle Checksums..."
+# Create checksums
+print_info "Creating checksums..."
 cd $BUILD_DIR
 sha256sum webcrawler-* > checksums.txt
 cd ..
-print_success "Checksums erstellt"
+print_success "Checksums created"
 
-print_success "Build abgeschlossen! 🎉"
-print_info "Build-Dateien befinden sich im '$BUILD_DIR' Verzeichnis"
+print_success "Build completed! 🎉"
+print_info "Build files are in the '$BUILD_DIR' directory"
 
-# Release-Hinweise
+# Release hints
 if [[ "$1" == "--release" ]]; then
-    print_warning "Release-Modus aktiviert"
-    print_info "Nächste Schritte für Release:"
+    print_warning "Release mode activated"
+    print_info "Next steps for release:"
     echo "1. git add ."
     echo "2. git commit -m 'Release v$VERSION'"
     echo "3. git tag v$VERSION"
     echo "4. git push origin main --tags"
-    echo "5. Erstelle Release auf GitHub mit den Build-Dateien"
+    echo "5. Create release on GitHub with build files"
 fi 

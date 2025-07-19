@@ -16,27 +16,27 @@ import (
 )
 
 func main() {
-	// Version anzeigen
+	// Display version information
 	version.PrintVersion()
 
-	// Konfiguration laden
+	// Load configuration
 	cfg := config.Load()
 
-	// Logger initialisieren
+	// Initialize logger
 	logger := logger.New(cfg.LogLevel)
-	logger.Info("🚀 WebCrawler API wird gestartet...")
+	logger.Info("🚀 WebCrawler API starting...")
 
-	// Scraper Service initialisieren
+	// Initialize scraper service
 	scraperService := scraper.NewService(logger)
 
-	// API Server initialisieren
+	// Initialize API server
 	server := api.NewServer(cfg, scraperService, logger)
 
-	// Server in Goroutine starten
+	// Start server in goroutine
 	go func() {
-		logger.Infof("🌐 Server läuft auf http://localhost:%d", cfg.Port)
+		logger.Infof("🌐 Server running on http://localhost:%d", cfg.Port)
 		if err := server.Start(); err != nil && err != http.ErrServerClosed {
-			logger.Fatalf("Server Fehler: %v", err)
+			logger.Fatalf("Server error: %v", err)
 		}
 	}()
 
@@ -45,14 +45,14 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logger.Info("🛑 Server wird heruntergefahren...")
+	logger.Info("🛑 Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		logger.Fatalf("Server konnte nicht ordnungsgemäß heruntergefahren werden: %v", err)
+		logger.Fatalf("Server could not be shut down gracefully: %v", err)
 	}
 
-	logger.Info("✅ Server erfolgreich heruntergefahren")
+	logger.Info("✅ Server successfully shut down")
 }

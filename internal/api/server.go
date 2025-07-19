@@ -22,7 +22,7 @@ type Server struct {
 }
 
 func NewServer(cfg *config.Config, scraperService *scraper.Service, logger *logger.Logger) *Server {
-	// Gin Mode setzen
+	// Set Gin mode
 	if cfg.LogLevel == "debug" {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -31,7 +31,7 @@ func NewServer(cfg *config.Config, scraperService *scraper.Service, logger *logg
 
 	router := gin.New()
 
-	// HTML Templates laden
+	// Load HTML templates
 	router.LoadHTMLGlob("templates/*")
 
 	// Middleware
@@ -63,11 +63,11 @@ func (s *Server) setupRoutes() {
 		api.POST("/scrape/batch", s.scrapeMultipleWebsites)
 		api.GET("/scrape/stats/:url", s.getWebsiteStats)
 
-		// WebSocket für Live Updates
+		// WebSocket for live updates
 		api.GET("/ws", s.handleWebSocket)
 	}
 
-	// Frontend (einfache HTML Seite)
+	// Frontend (simple HTML page)
 	s.router.GET("/", s.serveFrontend)
 	s.router.Static("/static", "./static")
 }
@@ -88,7 +88,7 @@ func (s *Server) scrapeWebsite(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "URL ist erforderlich",
+			"error": "URL is required",
 		})
 		return
 	}
@@ -98,7 +98,7 @@ func (s *Server) scrapeWebsite(c *gin.Context) {
 
 	data, err := s.scraperService.ScrapeWebsite(ctx, request.URL)
 	if err != nil {
-		s.logger.Errorf("Scraping Fehler: %v", err)
+		s.logger.Errorf("Scraping error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -118,14 +118,14 @@ func (s *Server) scrapeMultipleWebsites(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "URLs Array ist erforderlich",
+			"error": "URLs array is required",
 		})
 		return
 	}
 
 	if len(request.URLs) > 10 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Maximal 10 URLs erlaubt",
+			"error": "Maximum 10 URLs allowed",
 		})
 		return
 	}
@@ -135,7 +135,7 @@ func (s *Server) scrapeMultipleWebsites(c *gin.Context) {
 
 	results, err := s.scraperService.ScrapeMultipleWebsites(ctx, request.URLs)
 	if err != nil {
-		s.logger.Errorf("Batch Scraping Fehler: %v", err)
+		s.logger.Errorf("Batch scraping error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -153,7 +153,7 @@ func (s *Server) getWebsiteStats(c *gin.Context) {
 	url := c.Param("url")
 	if url == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "URL Parameter ist erforderlich",
+			"error": "URL parameter is required",
 		})
 		return
 	}
@@ -163,7 +163,7 @@ func (s *Server) getWebsiteStats(c *gin.Context) {
 
 	stats, err := s.scraperService.GetWebsiteStats(ctx, url)
 	if err != nil {
-		s.logger.Errorf("Stats Fehler: %v", err)
+		s.logger.Errorf("Stats error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -177,7 +177,7 @@ func (s *Server) getWebsiteStats(c *gin.Context) {
 }
 
 func (s *Server) handleWebSocket(c *gin.Context) {
-	// WebSocket Handler für Live Updates
+	// WebSocket handler for live updates
 	c.JSON(http.StatusOK, gin.H{
 		"message": "WebSocket Endpoint - Coming Soon!",
 	})
@@ -185,7 +185,7 @@ func (s *Server) handleWebSocket(c *gin.Context) {
 
 func (s *Server) serveFrontend(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", gin.H{
-		"title": "Web Scraper API",
+		"title": "WebCrawler API",
 	})
 }
 
@@ -195,7 +195,7 @@ func (s *Server) Start() error {
 		Handler: s.router,
 	}
 
-	s.logger.Infof("Server startet auf Port %d", s.config.Port)
+	s.logger.Infof("Server starting on port %d", s.config.Port)
 	return s.server.ListenAndServe()
 }
 

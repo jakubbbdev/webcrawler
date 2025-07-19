@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -211,59 +211,59 @@
     <div class="container">
         <div class="header">
             <h1>🕷️ WebCrawler</h1>
-            <p>Crawle und extrahiere Daten von Websites mit moderner REST API</p>
+            <p>Crawl and extract data from websites with modern REST API</p>
         </div>
 
         <div class="card">
             <div class="tabs">
-                <div class="tab active" onclick="switchTab('single')">Einzelne URL</div>
-                <div class="tab" onclick="switchTab('batch')">Mehrere URLs</div>
-                <div class="tab" onclick="switchTab('stats')">Website Statistiken</div>
+                <div class="tab active" onclick="switchTab('single')">Single URL</div>
+                <div class="tab" onclick="switchTab('batch')">Multiple URLs</div>
+                <div class="tab" onclick="switchTab('stats')">Website Statistics</div>
             </div>
 
-            <!-- Einzelne URL Tab -->
+            <!-- Single URL Tab -->
             <div id="single" class="tab-content active">
-                <h2>Website Crawlen</h2>
+                <h2>Website Crawling</h2>
                 <div class="form-group">
                     <label for="singleUrl">Website URL:</label>
                     <input type="url" id="singleUrl" placeholder="https://example.com" required>
                 </div>
-                <button class="btn" onclick="scrapeSingle()">Website Crawlen</button>
+                <button class="btn" onclick="scrapeSingle()">Crawl Website</button>
                 <div id="singleResult"></div>
             </div>
 
-            <!-- Mehrere URLs Tab -->
+            <!-- Multiple URLs Tab -->
             <div id="batch" class="tab-content">
                 <h2>Batch Crawling</h2>
                 <div class="form-group">
-                    <label for="batchUrls">Website URLs (eine pro Zeile):</label>
+                    <label for="batchUrls">Website URLs (one per line):</label>
                     <textarea id="batchUrls" rows="5" placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com"></textarea>
                 </div>
-                <button class="btn" onclick="scrapeBatch()">Batch Crawlen</button>
+                <button class="btn" onclick="scrapeBatch()">Batch Crawl</button>
                 <div id="batchResult"></div>
             </div>
 
-            <!-- Statistiken Tab -->
+            <!-- Statistics Tab -->
             <div id="stats" class="tab-content">
-                <h2>Website Statistiken</h2>
+                <h2>Website Statistics</h2>
                 <div class="form-group">
                     <label for="statsUrl">Website URL:</label>
                     <input type="url" id="statsUrl" placeholder="https://example.com" required>
                 </div>
-                <button class="btn" onclick="getStats()">Statistiken Abrufen</button>
+                <button class="btn" onclick="getStats()">Get Statistics</button>
                 <div id="statsResult"></div>
             </div>
         </div>
 
         <div class="card">
-            <h2>📚 API Dokumentation</h2>
+            <h2>📚 API Documentation</h2>
             <div class="result">
-                <h3>Endpunkte:</h3>
+                <h3>Endpoints:</h3>
                 <ul>
-                    <li><strong>POST /api/v1/scrape</strong> - Einzelne Website crawlen</li>
-                    <li><strong>POST /api/v1/scrape/batch</strong> - Mehrere Websites crawlen</li>
-                    <li><strong>GET /api/v1/scrape/stats/:url</strong> - Website Statistiken</li>
-                    <li><strong>GET /health</strong> - Health Check</li>
+                    <li><strong>POST /api/v1/scrape</strong> - Crawl single website</li>
+                    <li><strong>POST /api/v1/scrape/batch</strong> - Crawl multiple websites</li>
+                    <li><strong>GET /api/v1/scrape/stats/:url</strong> - Website statistics</li>
+                    <li><strong>GET /health</strong> - Health check</li>
                 </ul>
             </div>
         </div>
@@ -271,7 +271,7 @@
 
     <script>
         function switchTab(tabName) {
-            // Tabs verstecken
+            // Hide tabs
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
@@ -279,7 +279,7 @@
                 tab.classList.remove('active');
             });
 
-            // Aktiven Tab anzeigen
+            // Show active tab
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
         }
@@ -288,7 +288,7 @@
             document.getElementById(elementId).innerHTML = `
                 <div class="loading">
                     <div class="spinner"></div>
-                    <p>Daten werden geladen...</p>
+                    <p>Loading data...</p>
                 </div>
             `;
         }
@@ -296,7 +296,7 @@
         function showError(elementId, message) {
             document.getElementById(elementId).innerHTML = `
                 <div class="result">
-                    <h3>❌ Fehler</h3>
+                    <h3>❌ Error</h3>
                     <p>${message}</p>
                 </div>
             `;
@@ -305,7 +305,7 @@
         function showSuccess(elementId, data) {
             document.getElementById(elementId).innerHTML = `
                 <div class="result">
-                    <h3>✅ Erfolgreich</h3>
+                    <h3>✅ Success</h3>
                     <pre>${JSON.stringify(data, null, 2)}</pre>
                 </div>
             `;
@@ -314,7 +314,7 @@
         async function scrapeSingle() {
             const url = document.getElementById('singleUrl').value;
             if (!url) {
-                showError('singleResult', 'Bitte geben Sie eine URL ein.');
+                showError('singleResult', 'Please enter a URL.');
                 return;
             }
 
@@ -334,23 +334,23 @@
                 if (response.ok) {
                     showSuccess('singleResult', data);
                 } else {
-                    showError('singleResult', data.error || 'Unbekannter Fehler');
+                    showError('singleResult', data.error || 'Unknown error');
                 }
             } catch (error) {
-                showError('singleResult', 'Netzwerkfehler: ' + error.message);
+                showError('singleResult', 'Network error: ' + error.message);
             }
         }
 
         async function scrapeBatch() {
             const urlsText = document.getElementById('batchUrls').value;
             if (!urlsText) {
-                showError('batchResult', 'Bitte geben Sie URLs ein.');
+                showError('batchResult', 'Please enter URLs.');
                 return;
             }
 
             const urls = urlsText.split('\n').filter(url => url.trim() !== '');
             if (urls.length === 0) {
-                showError('batchResult', 'Keine gültigen URLs gefunden.');
+                showError('batchResult', 'No valid URLs found.');
                 return;
             }
 
@@ -370,17 +370,17 @@
                 if (response.ok) {
                     showSuccess('batchResult', data);
                 } else {
-                    showError('batchResult', data.error || 'Unbekannter Fehler');
+                    showError('batchResult', data.error || 'Unknown error');
                 }
             } catch (error) {
-                showError('batchResult', 'Netzwerkfehler: ' + error.message);
+                showError('batchResult', 'Network error: ' + error.message);
             }
         }
 
         async function getStats() {
             const url = document.getElementById('statsUrl').value;
             if (!url) {
-                showError('statsResult', 'Bitte geben Sie eine URL ein.');
+                showError('statsResult', 'Please enter a URL.');
                 return;
             }
 
@@ -394,19 +394,19 @@
                     const stats = data.data;
                     document.getElementById('statsResult').innerHTML = `
                         <div class="result">
-                            <h3>📊 Website Statistiken</h3>
+                            <h3>📊 Website Statistics</h3>
                             <div class="stats-grid">
                                 <div class="stat-card">
                                     <div class="stat-number">${stats.title_length}</div>
-                                    <div class="stat-label">Titel Länge</div>
+                                    <div class="stat-label">Title Length</div>
                                 </div>
                                 <div class="stat-card">
                                     <div class="stat-number">${stats.text_length}</div>
-                                    <div class="stat-label">Text Länge</div>
+                                    <div class="stat-label">Text Length</div>
                                 </div>
                                 <div class="stat-card">
                                     <div class="stat-number">${stats.image_count}</div>
-                                    <div class="stat-label">Bilder</div>
+                                    <div class="stat-label">Images</div>
                                 </div>
                                 <div class="stat-card">
                                     <div class="stat-number">${stats.link_count}</div>
@@ -425,10 +425,10 @@
                         </div>
                     `;
                 } else {
-                    showError('statsResult', data.error || 'Unbekannter Fehler');
+                    showError('statsResult', data.error || 'Unknown error');
                 }
             } catch (error) {
-                showError('statsResult', 'Netzwerkfehler: ' + error.message);
+                showError('statsResult', 'Network error: ' + error.message);
             }
         }
     </script>

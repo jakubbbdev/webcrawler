@@ -1,22 +1,22 @@
-# Web Scraper API Konfiguration
+# WebCrawler API Configuration
 port: 8080
 log_level: info
 timeout: 30
 
-# Scraping Einstellungen
+# Scraping Settings
 scraping:
   max_concurrent: 5
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
   follow_redirects: true
   max_redirects: 10
 
-# API Einstellungen
+# API Settings
 api:
   cors_enabled: true
-  rate_limit: 100  # Requests pro Minute
+  rate_limit: 100  # Requests per minute
   max_request_size: "10MB"
 
-# Logging Einstellungen
+# Logging Settings
 logging:
   format: "json"
   level: "info"
