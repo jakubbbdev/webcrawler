@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebCrawler - Website Crawling API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .result pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e1e5e9;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e1e5e9;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕷️ WebCrawler</h1>
+            <p>Crawle und extrahiere Daten von Websites mit moderner REST API</p>
+        </div>
+
+        <div class="card">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('single')">Einzelne URL</div>
+                <div class="tab" onclick="switchTab('batch')">Mehrere URLs</div>
+                <div class="tab" onclick="switchTab('stats')">Website Statistiken</div>
+            </div>
+
+            <!-- Einzelne URL Tab -->
+            <div id="single" class="tab-content active">
+                <h2>Website Crawlen</h2>
+                <div class="form-group">
+                    <label for="singleUrl">Website URL:</label>
+                    <input type="url" id="singleUrl" placeholder="https://example.com" required>
+                </div>
+                <button class="btn" onclick="scrapeSingle()">Website Crawlen</button>
+                <div id="singleResult"></div>
+            </div>
+
+            <!-- Mehrere URLs Tab -->
+            <div id="batch" class="tab-content">
+                <h2>Batch Crawling</h2>
+                <div class="form-group">
+                    <label for="batchUrls">Website URLs (eine pro Zeile):</label>
+                    <textarea id="batchUrls" rows="5" placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com"></textarea>
+                </div>
+                <button class="btn" onclick="scrapeBatch()">Batch Crawlen</button>
+                <div id="batchResult"></div>
+            </div>
+
+            <!-- Statistiken Tab -->
+            <div id="stats" class="tab-content">
+                <h2>Website Statistiken</h2>
+                <div class="form-group">
+                    <label for="statsUrl">Website URL:</label>
+                    <input type="url" id="statsUrl" placeholder="https://example.com" required>
+                </div>
+                <button class="btn" onclick="getStats()">Statistiken Abrufen</button>
+                <div id="statsResult"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📚 API Dokumentation</h2>
+            <div class="result">
+                <h3>Endpunkte:</h3>
+                <ul>
+                    <li><strong>POST /api/v1/scrape</strong> - Einzelne Website crawlen</li>
+                    <li><strong>POST /api/v1/scrape/batch</strong> - Mehrere Websites crawlen</li>
+                    <li><strong>GET /api/v1/scrape/stats/:url</strong> - Website Statistiken</li>
+                    <li><strong>GET /health</strong> - Health Check</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Tabs verstecken
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Aktiven Tab anzeigen
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Daten werden geladen...</p>
+                </div>
+            `;
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="result">
+                    <h3>❌ Fehler</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        function showSuccess(elementId, data) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="result">
+                    <h3>✅ Erfolgreich</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        async function scrapeSingle() {
+            const url = document.getElementById('singleUrl').value;
+            if (!url) {
+                showError('singleResult', 'Bitte geben Sie eine URL ein.');
+                return;
+            }
+
+            showLoading('singleResult');
+
+            try {
+                const response = await fetch('/api/v1/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('singleResult', data);
+                } else {
+                    showError('singleResult', data.error || 'Unbekannter Fehler');
+                }
+            } catch (error) {
+                showError('singleResult', 'Netzwerkfehler: ' + error.message);
+            }
+        }
+
+        async function scrapeBatch() {
+            const urlsText = document.getElementById('batchUrls').value;
+            if (!urlsText) {
+                showError('batchResult', 'Bitte geben Sie URLs ein.');
+                return;
+            }
+
+            const urls = urlsText.split('\n').filter(url => url.trim() !== '');
+            if (urls.length === 0) {
+                showError('batchResult', 'Keine gültigen URLs gefunden.');
+                return;
+            }
+
+            showLoading('batchResult');
+
+            try {
+                const response = await fetch('/api/v1/scrape/batch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ urls: urls })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('batchResult', data);
+                } else {
+                    showError('batchResult', data.error || 'Unbekannter Fehler');
+                }
+            } catch (error) {
+                showError('batchResult', 'Netzwerkfehler: ' + error.message);
+            }
+        }
+
+        async function getStats() {
+            const url = document.getElementById('statsUrl').value;
+            if (!url) {
+                showError('statsResult', 'Bitte geben Sie eine URL ein.');
+                return;
+            }
+
+            showLoading('statsResult');
+
+            try {
+                const response = await fetch(`/api/v1/scrape/stats/${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    const stats = data.data;
+                    document.getElementById('statsResult').innerHTML = `
+                        <div class="result">
+                            <h3>📊 Website Statistiken</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number">${stats.title_length}</div>
+                                    <div class="stat-label">Titel Länge</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${stats.text_length}</div>
+                                    <div class="stat-label">Text Länge</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${stats.image_count}</div>
+                                    <div class="stat-label">Bilder</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${stats.link_count}</div>
+                                    <div class="stat-label">Links</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${stats.keyword_count}</div>
+                                    <div class="stat-label">Keywords</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">${stats.meta_count}</div>
+                                    <div class="stat-label">Meta Tags</div>
+                                </div>
+                            </div>
+                            <pre style="margin-top: 20px;">${JSON.stringify(stats, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    showError('statsResult', data.error || 'Unbekannter Fehler');
+                }
+            } catch (error) {
+                showError('statsResult', 'Netzwerkfehler: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,23 @@
+# Web Scraper API Konfiguration
+port: 8080
+log_level: info
+timeout: 30
+
+# Scraping Einstellungen
+scraping:
+  max_concurrent: 5
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  follow_redirects: true
+  max_redirects: 10
+
+# API Einstellungen
+api:
+  cors_enabled: true
+  rate_limit: 100  # Requests pro Minute
+  max_request_size: "10MB"
+
+# Logging Einstellungen
+logging:
+  format: "json"
+  level: "info"
+  output: "stdout" 
