@@ -3,8 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebCrawler - Website Crawling API</title>
+    <title>WebCrawler - Modern Website Crawling API</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary-color: #8b5cf6;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,118 +29,255 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 20px;
         }
 
+        /* Header */
         .header {
-            text-align: center;
-            margin-bottom: 40px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
         }
 
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
-        .header p {
-            font-size: 1.2rem;
+        .header-left h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-left p {
+            font-size: 1.1rem;
             opacity: 0.9;
         }
 
-        .ws-status {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .ws-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
             font-size: 0.9rem;
-            margin-left: 20px;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        .ws-connected {
+        .ws-indicator.connected {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .ws-indicator.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .ws-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .ws-dot.connected {
             background: #10b981;
-            color: white;
         }
 
-        .ws-disconnected {
+        .ws-dot.disconnected {
             background: #ef4444;
-            color: white;
         }
 
-        .main-grid {
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Layout */
+        .main-layout {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 30px;
+            grid-template-columns: 1fr 350px;
+            gap: 2rem;
+            margin-bottom: 2rem;
         }
 
+        /* Cards */
         .card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
         }
 
         .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 1.8rem;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #555;
-        }
-
-        .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-
-        .form-group input:focus, .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-
-        .btn:hover {
+            box-shadow: var(--shadow-lg);
             transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+
+        .icon-primary { background: var(--primary-color); }
+        .icon-success { background: var(--success-color); }
+        .icon-warning { background: var(--warning-color); }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: var(--background);
+            border-radius: 12px;
+            padding: 0.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .tab.active {
+            background: var(--surface);
+            color: var(--primary-color);
+            box-shadow: var(--shadow);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--surface);
+        }
+
+        .form-input:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            margin-right: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-1px);
         }
 
         .btn:disabled {
@@ -132,52 +286,87 @@
             transform: none;
         }
 
-        .btn-secondary {
-            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        /* Progress Bar */
+        .progress-container {
+            margin: 1rem 0;
+            display: none;
         }
 
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
         }
 
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Results */
         .result {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            border-left: 4px solid #667eea;
+            background: var(--background);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border: 1px solid var(--border);
         }
 
-        .result h3 {
-            color: #667eea;
-            margin-bottom: 15px;
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .result-success { color: var(--success-color); }
+        .result-error { color: var(--error-color); }
+
+        .result-content {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid var(--border);
         }
 
         .result pre {
-            background: #2d3748;
+            background: #1e293b;
             color: #e2e8f0;
-            padding: 15px;
+            padding: 1rem;
             border-radius: 8px;
             overflow-x: auto;
-            font-size: 14px;
+            font-size: 0.9rem;
             max-height: 400px;
             overflow-y: auto;
         }
 
+        /* Loading */
         .loading {
             text-align: center;
-            padding: 20px;
-            color: #667eea;
+            padding: 2rem;
+            color: var(--primary-color);
         }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--primary-color);
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 1rem;
         }
 
         @keyframes spin {
@@ -185,29 +374,121 @@
             100% { transform: rotate(360deg); }
         }
 
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e1e5e9;
+        /* Live Updates */
+        .live-updates {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #334155;
         }
 
-        .tab {
-            padding: 12px 24px;
+        .update-item {
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .update-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: var(--success-color);
+        }
+
+        .update-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--error-color);
+        }
+
+        .update-progress {
+            background: rgba(99, 102, 241, 0.1);
+            border-left-color: var(--primary-color);
+        }
+
+        .update-time {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .clear-btn {
+            background: var(--error-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            margin-top: 1rem;
         }
 
-        .tab.active {
-            border-bottom-color: #667eea;
-            color: #667eea;
-            font-weight: 600;
+        .clear-btn:hover {
+            background: #dc2626;
         }
 
-        .tab:hover {
-            background: #f8f9fa;
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
 
+        .stat-card {
+            background: var(--background);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            
+            .card {
+                padding: 1.5rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Tab Content */
         .tab-content {
             display: none;
         }
@@ -216,178 +497,259 @@
             display: block;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+        /* Export Section */
+        .export-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
         }
 
-        .stat-card {
-            background: #f8f9fa;
-            padding: 15px;
+        .export-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        /* API Documentation */
+        .api-docs {
+            background: var(--background);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .api-docs h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .api-endpoint {
+            background: var(--surface);
+            padding: 1rem;
             border-radius: 8px;
-            text-align: center;
-            border: 1px solid #e1e5e9;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border);
         }
 
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
+        .api-method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
         }
 
-        .stat-label {
-            color: #666;
-            margin-top: 5px;
-            font-size: 0.9rem;
-        }
+        .method-post { background: #10b981; color: white; }
+        .method-get { background: #3b82f6; color: white; }
 
-        .live-updates {
-            background: #1a202c;
-            color: #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .update-item {
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border-left: 3px solid #667eea;
-        }
-
-        .update-success {
-            background: #065f46;
-            border-left-color: #10b981;
-        }
-
-        .update-error {
-            background: #7f1d1d;
-            border-left-color: #ef4444;
-        }
-
-        .update-progress {
-            background: #1e3a8a;
-            border-left-color: #3b82f6;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #e1e5e9;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            transition: width 0.3s ease;
-        }
-
-        .export-buttons {
-            margin-top: 15px;
-        }
-
-        .clear-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .clear-btn:hover {
-            background: #dc2626;
+        .api-url {
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: var(--text-primary);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🕷️ WebCrawler</h1>
-            <p>Crawl and extract data from websites with modern REST API</p>
-            <div id="wsStatus" class="ws-status ws-disconnected">WebSocket: Disconnected</div>
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1><i class="fas fa-spider"></i> WebCrawler</h1>
+                    <p>Modern website crawling with real-time updates</p>
+                </div>
+                <div class="header-right">
+                    <div id="wsStatus" class="ws-indicator disconnected">
+                        <div class="ws-dot disconnected"></div>
+                        <span>WebSocket: Disconnected</span>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <div class="main-grid">
+    <div class="container">
+        <div class="main-layout">
             <div class="main-content">
                 <div class="card">
                     <div class="tabs">
-                        <div class="tab active" onclick="switchTab('single')">Single URL</div>
-                        <div class="tab" onclick="switchTab('batch')">Multiple URLs</div>
-                        <div class="tab" onclick="switchTab('stats')">Website Statistics</div>
+                        <div class="tab active" onclick="switchTab('single')">
+                            <i class="fas fa-link"></i> Single URL
+                        </div>
+                        <div class="tab" onclick="switchTab('batch')">
+                            <i class="fas fa-list"></i> Multiple URLs
+                        </div>
+                        <div class="tab" onclick="switchTab('stats')">
+                            <i class="fas fa-chart-bar"></i> Statistics
+                        </div>
                     </div>
 
                     <!-- Single URL Tab -->
                     <div id="single" class="tab-content active">
-                        <h2>Website Crawling</h2>
-                        <div class="form-group">
-                            <label for="singleUrl">Website URL:</label>
-                            <input type="url" id="singleUrl" placeholder="https://example.com" required>
+                        <div class="card-header">
+                            <div class="card-icon icon-primary">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <h2>Single Website Crawling</h2>
                         </div>
-                        <button class="btn" onclick="scrapeSingle()">Crawl Website</button>
-                        <button class="btn btn-secondary" onclick="exportSingleCSV()">Export CSV</button>
-                        <button class="btn btn-secondary" onclick="exportSingleJSON()">Export JSON</button>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="singleUrl">
+                                <i class="fas fa-link"></i> Website URL
+                            </label>
+                            <input type="url" id="singleUrl" class="form-input" 
+                                   placeholder="https://example.com" required>
+                        </div>
+                        
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="scrapeSingle()">
+                                <i class="fas fa-play"></i> Start Crawling
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportSingleCSV()">
+                                <i class="fas fa-file-csv"></i> Export CSV
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportSingleJSON()">
+                                <i class="fas fa-file-code"></i> Export JSON
+                            </button>
+                        </div>
+                        
                         <div id="singleResult"></div>
                     </div>
 
                     <!-- Multiple URLs Tab -->
                     <div id="batch" class="tab-content">
-                        <h2>Batch Crawling</h2>
+                        <div class="card-header">
+                            <div class="card-icon icon-warning">
+                                <i class="fas fa-layer-group"></i>
+                            </div>
+                            <h2>Batch Crawling</h2>
+                        </div>
+                        
                         <div class="form-group">
-                            <label for="batchUrls">Website URLs (one per line):</label>
-                            <textarea id="batchUrls" rows="5" placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com"></textarea>
+                            <label class="form-label" for="batchUrls">
+                                <i class="fas fa-list"></i> Website URLs (one per line)
+                            </label>
+                            <textarea id="batchUrls" class="form-textarea" 
+                                      placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com"></textarea>
                         </div>
-                        <button class="btn" onclick="scrapeBatch()">Batch Crawl</button>
-                        <div class="progress-bar" id="batchProgress" style="display: none;">
-                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        
+                        <button class="btn btn-primary" onclick="scrapeBatch()">
+                            <i class="fas fa-play"></i> Start Batch Crawling
+                        </button>
+                        
+                        <div class="progress-container" id="batchProgress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">0% Complete</div>
                         </div>
+                        
                         <div id="batchResult"></div>
                     </div>
 
                     <!-- Statistics Tab -->
                     <div id="stats" class="tab-content">
-                        <h2>Website Statistics</h2>
-                        <div class="form-group">
-                            <label for="statsUrl">Website URL:</label>
-                            <input type="url" id="statsUrl" placeholder="https://example.com" required>
+                        <div class="card-header">
+                            <div class="card-icon icon-success">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h2>Website Statistics</h2>
                         </div>
-                        <button class="btn" onclick="getStats()">Get Statistics</button>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="statsUrl">
+                                <i class="fas fa-link"></i> Website URL
+                            </label>
+                            <input type="url" id="statsUrl" class="form-input" 
+                                   placeholder="https://example.com" required>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="getStats()">
+                            <i class="fas fa-chart-bar"></i> Get Statistics
+                        </button>
+                        
                         <div id="statsResult"></div>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h2>📚 API Documentation</h2>
-                    <div class="result">
-                        <h3>Endpoints:</h3>
-                        <ul>
-                            <li><strong>POST /api/v1/scrape</strong> - Crawl single website</li>
-                            <li><strong>POST /api/v1/scrape/batch</strong> - Crawl multiple websites</li>
-                            <li><strong>GET /api/v1/scrape/stats?url=</strong> - Website statistics</li>
-                            <li><strong>GET /api/v1/export/csv?url=</strong> - Export to CSV</li>
-                            <li><strong>GET /api/v1/export/json?url=</strong> - Export to JSON</li>
-                            <li><strong>GET /api/v1/ws</strong> - WebSocket for live updates</li>
-                            <li><strong>GET /health</strong> - Health check</li>
-                        </ul>
+                    <div class="card-header">
+                        <div class="card-icon icon-primary">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h2>API Documentation</h2>
+                    </div>
+                    
+                    <div class="api-docs">
+                        <div class="api-endpoint">
+                            <span class="api-method method-post">POST</span>
+                            <span class="api-url">/api/v1/scrape</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Crawl single website
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-post">POST</span>
+                            <span class="api-url">/api/v1/scrape/batch</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Crawl multiple websites
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-get">GET</span>
+                            <span class="api-url">/api/v1/scrape/stats?url=</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Get website statistics
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-get">GET</span>
+                            <span class="api-url">/api/v1/export/csv?url=</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Export data to CSV
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-get">GET</span>
+                            <span class="api-url">/api/v1/export/json?url=</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Export data to JSON
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-get">GET</span>
+                            <span class="api-url">/api/v1/ws</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                WebSocket for live updates
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="sidebar">
                 <div class="card">
-                    <h2>🔴 Live Updates</h2>
-                    <div class="live-updates" id="liveUpdates">
-                        <p>Connect to WebSocket to see live updates...</p>
+                    <div class="card-header">
+                        <div class="card-icon icon-primary">
+                            <i class="fas fa-broadcast-tower"></i>
+                        </div>
+                        <h2>Live Updates</h2>
                     </div>
-                    <button class="clear-btn" onclick="clearUpdates()">Clear Updates</button>
+                    
+                    <div class="live-updates" id="liveUpdates">
+                        <div class="update-item">
+                            <div class="update-time">Connecting to WebSocket...</div>
+                        </div>
+                    </div>
+                    
+                    <button class="clear-btn" onclick="clearUpdates()">
+                        <i class="fas fa-trash"></i> Clear Updates
+                    </button>
                 </div>
             </div>
         </div>
@@ -431,12 +793,16 @@
 
         function updateWSStatus(connected) {
             const status = document.getElementById('wsStatus');
+            const dot = status.querySelector('.ws-dot');
+            
             if (connected) {
                 status.textContent = 'WebSocket: Connected';
-                status.className = 'ws-status ws-connected';
+                status.className = 'ws-indicator connected';
+                dot.className = 'ws-dot connected';
             } else {
                 status.textContent = 'WebSocket: Disconnected';
-                status.className = 'ws-status ws-disconnected';
+                status.className = 'ws-indicator disconnected';
+                dot.className = 'ws-dot disconnected';
             }
         }
 
@@ -473,7 +839,7 @@
             const updateItem = document.createElement('div');
             updateItem.className = `update-item update-${type}`;
             updateItem.innerHTML = `
-                <div style="font-size: 0.9rem; color: #9ca3af;">${new Date().toLocaleTimeString()}</div>
+                <div class="update-time">${new Date().toLocaleTimeString()}</div>
                 <div>${message}</div>
             `;
             updatesContainer.appendChild(updateItem);
@@ -481,19 +847,21 @@
         }
 
         function clearUpdates() {
-            document.getElementById('liveUpdates').innerHTML = '<p>Updates cleared...</p>';
+            document.getElementById('liveUpdates').innerHTML = '<div class="update-item"><div class="update-time">Updates cleared...</div></div>';
         }
 
         function updateBatchProgress(progress, completed, total, current) {
-            const progressBar = document.getElementById('batchProgress');
+            const progressContainer = document.getElementById('batchProgress');
             const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
             
-            progressBar.style.display = 'block';
+            progressContainer.style.display = 'block';
             progressFill.style.width = `${progress}%`;
+            progressText.textContent = `${completed}/${total} (${progress.toFixed(1)}%) - ${current}`;
             
             if (completed >= total) {
                 setTimeout(() => {
-                    progressBar.style.display = 'none';
+                    progressContainer.style.display = 'none';
                 }, 3000);
             }
         }
@@ -524,8 +892,13 @@
         function showError(elementId, message) {
             document.getElementById(elementId).innerHTML = `
                 <div class="result">
-                    <h3>❌ Error</h3>
-                    <p>${message}</p>
+                    <div class="result-header result-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Error
+                    </div>
+                    <div class="result-content">
+                        <p>${message}</p>
+                    </div>
                 </div>
             `;
         }
@@ -533,8 +906,13 @@
         function showSuccess(elementId, data) {
             document.getElementById(elementId).innerHTML = `
                 <div class="result">
-                    <h3>✅ Success</h3>
-                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    <div class="result-header result-success">
+                        <i class="fas fa-check-circle"></i>
+                        Success
+                    </div>
+                    <div class="result-content">
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
                 </div>
             `;
         }
@@ -622,34 +1000,39 @@
                     const stats = data.data;
                     document.getElementById('statsResult').innerHTML = `
                         <div class="result">
-                            <h3>📊 Website Statistics</h3>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <div class="stat-number">${stats.title_length}</div>
-                                    <div class="stat-label">Title Length</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-number">${stats.text_length}</div>
-                                    <div class="stat-label">Text Length</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-number">${stats.image_count}</div>
-                                    <div class="stat-label">Images</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-number">${stats.link_count}</div>
-                                    <div class="stat-label">Links</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-number">${stats.keyword_count}</div>
-                                    <div class="stat-label">Keywords</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div class="stat-number">${stats.meta_count}</div>
-                                    <div class="stat-label">Meta Tags</div>
-                                </div>
+                            <div class="result-header result-success">
+                                <i class="fas fa-chart-bar"></i>
+                                Website Statistics
                             </div>
-                            <pre style="margin-top: 20px;">${JSON.stringify(stats, null, 2)}</pre>
+                            <div class="result-content">
+                                <div class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-number">${stats.title_length}</div>
+                                        <div class="stat-label">Title Length</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">${stats.text_length}</div>
+                                        <div class="stat-label">Text Length</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">${stats.image_count}</div>
+                                        <div class="stat-label">Images</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">${stats.link_count}</div>
+                                        <div class="stat-label">Links</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">${stats.keyword_count}</div>
+                                        <div class="stat-label">Keywords</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-number">${stats.meta_count}</div>
+                                        <div class="stat-label">Meta Tags</div>
+                                    </div>
+                                </div>
+                                <pre style="margin-top: 1.5rem;">${JSON.stringify(stats, null, 2)}</pre>
+                            </div>
                         </div>
                     `;
                 } else {

@@ -58,8 +58,7 @@ func (manager *WebSocketManager) Start() {
 		case message := <-manager.broadcast:
 			manager.mutex.RLock()
 			for client := range manager.clients {
-				err := client.WriteJSON(message)
-				if err != nil {
+				if err := client.WriteJSON(message); err != nil {
 					manager.logger.Errorf("Error sending message to client: %v", err)
 					client.Close()
 					delete(manager.clients, client)
@@ -135,7 +134,11 @@ func (manager *WebSocketManager) HandleWebSocket(w http.ResponseWriter, r *http.
 		Message: "Connected to WebCrawler WebSocket",
 		Time:    time.Now(),
 	}
-	conn.WriteJSON(welcomeMessage)
+	if err := conn.WriteJSON(welcomeMessage); err != nil {
+		manager.logger.Errorf("Error sending welcome message: %v", err)
+		conn.Close()
+		return
+	}
 
 	// Handle incoming messages
 	go func() {
@@ -157,7 +160,10 @@ func (manager *WebSocketManager) HandleWebSocket(w http.ResponseWriter, r *http.
 			if err := json.Unmarshal(message, &msg); err == nil {
 				msg.Type = "echo"
 				msg.Time = time.Now()
-				conn.WriteJSON(msg)
+				if err := conn.WriteJSON(msg); err != nil {
+					manager.logger.Errorf("Error sending echo message: %v", err)
+					break
+				}
 			}
 		}
 	}()
