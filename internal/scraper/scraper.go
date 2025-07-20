@@ -387,7 +387,7 @@ func (s *Service) filterUrls(urls []string, options *CrawlingOptions) []string {
 		if len(options.IncludePatterns) > 0 {
 			matched := false
 			for _, pattern := range options.IncludePatterns {
-				if matched, _ := regexp.MatchString(pattern, u); matched {
+				if isMatched, _ := regexp.MatchString(pattern, u); isMatched {
 					matched = true
 					break
 				}
@@ -401,7 +401,7 @@ func (s *Service) filterUrls(urls []string, options *CrawlingOptions) []string {
 		if len(options.ExcludePatterns) > 0 {
 			excluded := false
 			for _, pattern := range options.ExcludePatterns {
-				if matched, _ := regexp.MatchString(pattern, u); matched {
+				if isMatched, _ := regexp.MatchString(pattern, u); isMatched {
 					excluded = true
 					break
 				}
