@@ -548,6 +548,76 @@
             font-family: 'Monaco', 'Consolas', monospace;
             color: var(--text-primary);
         }
+
+        /* New styles for Advanced Tab */
+        .options-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .options-section h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .checkmark {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            display: none; /* Hide default checkbox */
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + .checkmark:after {
+            content: "\f00c"; /* Checkmark icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: white;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -578,6 +648,9 @@
                         </div>
                         <div class="tab" onclick="switchTab('batch')">
                             <i class="fas fa-list"></i> Multiple URLs
+                        </div>
+                        <div class="tab" onclick="switchTab('advanced')">
+                            <i class="fas fa-cogs"></i> Advanced
                         </div>
                         <div class="tab" onclick="switchTab('stats')">
                             <i class="fas fa-chart-bar"></i> Statistics
@@ -647,6 +720,193 @@
                         <div id="batchResult"></div>
                     </div>
 
+                    <!-- Advanced Tab -->
+                    <div id="advanced" class="tab-content">
+                        <div class="card-header">
+                            <div class="card-icon icon-success">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <h2>Advanced Crawling</h2>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="advancedUrl">
+                                <i class="fas fa-link"></i> Website URL
+                            </label>
+                            <input type="url" id="advancedUrl" class="form-input" 
+                                   placeholder="https://example.com" required>
+                        </div>
+
+                        <!-- Basic Options -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-sliders-h"></i> Basic Options</h3>
+                            <div class="options-grid">
+                                <div class="form-group">
+                                    <label class="form-label" for="maxDepth">Max Depth</label>
+                                    <input type="number" id="maxDepth" class="form-input" value="1" min="1" max="10">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="maxPages">Max Pages</label>
+                                    <input type="number" id="maxPages" class="form-input" value="1" min="1" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="timeout">Timeout (seconds)</label>
+                                    <input type="number" id="timeout" class="form-input" value="30" min="5" max="300">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" for="delay">Delay (ms)</label>
+                                    <input type="number" id="delay" class="form-input" value="0" min="0" max="10000">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Extraction Options -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-download"></i> Extraction Options</h3>
+                            <div class="options-grid">
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="extractImages" checked>
+                                        <span class="checkmark"></span>
+                                        Extract Images
+                                    </label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="extractLinks" checked>
+                                        <span class="checkmark"></span>
+                                        Extract Links
+                                    </label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="extractForms">
+                                        <span class="checkmark"></span>
+                                        Extract Forms
+                                    </label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="extractTables">
+                                        <span class="checkmark"></span>
+                                        Extract Tables
+                                    </label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="extractScripts">
+                                        <span class="checkmark"></span>
+                                        Extract Scripts
+                                    </label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="extractStyles">
+                                        <span class="checkmark"></span>
+                                        Extract Styles
+                                    </label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="extractHeaders">
+                                        <span class="checkmark"></span>
+                                        Extract Headers (H1, H2, H3)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtering Options -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-filter"></i> Filtering Options</h3>
+                            <div class="form-group">
+                                <label class="form-label" for="includePatterns">
+                                    Include Patterns (regex, one per line)
+                                </label>
+                                <textarea id="includePatterns" class="form-textarea" 
+                                          placeholder=".*\.html&#10;.*product.*"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="excludePatterns">
+                                    Exclude Patterns (regex, one per line)
+                                </label>
+                                <textarea id="excludePatterns" class="form-textarea" 
+                                          placeholder=".*\.pdf&#10;.*admin.*"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="allowedDomains">
+                                    Allowed Domains (one per line)
+                                </label>
+                                <textarea id="allowedDomains" class="form-textarea" 
+                                          placeholder="example.com&#10;subdomain.example.com"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Custom Selectors -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-code"></i> Custom Selectors</h3>
+                            <div class="form-group">
+                                <label class="form-label" for="customSelectors">
+                                    Custom CSS Selectors (JSON format)
+                                </label>
+                                <textarea id="customSelectors" class="form-textarea" 
+                                          placeholder='{"price": ".price", "rating": ".rating", "author": ".author"}'></textarea>
+                            </div>
+                        </div>
+
+                        <!-- User Agent & Headers -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-user"></i> User Agent & Headers</h3>
+                            <div class="form-group">
+                                <label class="form-label" for="userAgent">User Agent</label>
+                                <input type="text" id="userAgent" class="form-input" 
+                                       value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="customHeaders">
+                                    Custom Headers (JSON format)
+                                </label>
+                                <textarea id="customHeaders" class="form-textarea" 
+                                          placeholder='{"Accept-Language": "en-US,en;q=0.9", "Accept": "text/html,application/xhtml+xml"}'></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-advanced"></i> Advanced Settings</h3>
+                            <div class="options-grid">
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="followRedirects" checked>
+                                        <span class="checkmark"></span>
+                                        Follow Redirects
+                                    </label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="respectRobotsTxt">
+                                        <span class="checkmark"></span>
+                                        Respect robots.txt
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="scrapeAdvanced()">
+                                <i class="fas fa-play"></i> Start Advanced Crawling
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportAdvancedCSV()">
+                                <i class="fas fa-file-csv"></i> Export Advanced CSV
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportAdvancedJSON()">
+                                <i class="fas fa-file-code"></i> Export Advanced JSON
+                            </button>
+                        </div>
+                        
+                        <div id="advancedResult"></div>
+                    </div>
+
                     <!-- Statistics Tab -->
                     <div id="stats" class="tab-content">
                         <div class="card-header">
@@ -691,9 +951,25 @@
                         
                         <div class="api-endpoint">
                             <span class="api-method method-post">POST</span>
+                            <span class="api-url">/api/v1/scrape/advanced</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Crawl single website with advanced options
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-post">POST</span>
                             <span class="api-url">/api/v1/scrape/batch</span>
                             <div style="margin-top: 0.5rem; color: var(--text-secondary);">
                                 Crawl multiple websites
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-post">POST</span>
+                            <span class="api-url">/api/v1/scrape/batch/advanced</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Crawl multiple websites with advanced options
                             </div>
                         </div>
                         
@@ -706,6 +982,14 @@
                         </div>
                         
                         <div class="api-endpoint">
+                            <span class="api-method method-post">POST</span>
+                            <span class="api-url">/api/v1/scrape/stats/advanced</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Get website statistics with advanced options
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
                             <span class="api-method method-get">GET</span>
                             <span class="api-url">/api/v1/export/csv?url=</span>
                             <div style="margin-top: 0.5rem; color: var(--text-secondary);">
@@ -714,10 +998,26 @@
                         </div>
                         
                         <div class="api-endpoint">
+                            <span class="api-method method-post">POST</span>
+                            <span class="api-url">/api/v1/export/csv/advanced</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Export data to CSV with advanced options
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
                             <span class="api-method method-get">GET</span>
                             <span class="api-url">/api/v1/export/json?url=</span>
                             <div style="margin-top: 0.5rem; color: var(--text-secondary);">
                                 Export data to JSON
+                            </div>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <span class="api-method method-post">POST</span>
+                            <span class="api-url">/api/v1/export/json/advanced</span>
+                            <div style="margin-top: 0.5rem; color: var(--text-secondary);">
+                                Export data to JSON with advanced options
                             </div>
                         </div>
                         
@@ -1061,6 +1361,176 @@
             }
 
             window.open(`/api/v1/export/json?url=${encodeURIComponent(url)}`, '_blank');
+        }
+
+        // Advanced crawling functions
+        function getAdvancedOptions() {
+            // Parse arrays from textareas
+            const includePatterns = document.getElementById('includePatterns').value
+                .split('\n').filter(line => line.trim() !== '');
+            const excludePatterns = document.getElementById('excludePatterns').value
+                .split('\n').filter(line => line.trim() !== '');
+            const allowedDomains = document.getElementById('allowedDomains').value
+                .split('\n').filter(line => line.trim() !== '');
+
+            // Parse custom selectors
+            let customSelectors = {};
+            try {
+                const customSelectorsText = document.getElementById('customSelectors').value.trim();
+                if (customSelectorsText) {
+                    customSelectors = JSON.parse(customSelectorsText);
+                }
+            } catch (e) {
+                console.error('Invalid custom selectors JSON:', e);
+            }
+
+            // Parse custom headers
+            let headers = {};
+            try {
+                const headersText = document.getElementById('customHeaders').value.trim();
+                if (headersText) {
+                    headers = JSON.parse(headersText);
+                }
+            } catch (e) {
+                console.error('Invalid custom headers JSON:', e);
+            }
+
+            return {
+                max_depth: parseInt(document.getElementById('maxDepth').value) || 1,
+                max_pages: parseInt(document.getElementById('maxPages').value) || 1,
+                timeout: (parseInt(document.getElementById('timeout').value) || 30) * 1000000000, // Convert to nanoseconds
+                delay: (parseInt(document.getElementById('delay').value) || 0) * 1000000, // Convert to nanoseconds
+                include_patterns: includePatterns,
+                exclude_patterns: excludePatterns,
+                allowed_domains: allowedDomains,
+                extract_images: document.getElementById('extractImages').checked,
+                extract_links: document.getElementById('extractLinks').checked,
+                extract_forms: document.getElementById('extractForms').checked,
+                extract_tables: document.getElementById('extractTables').checked,
+                extract_scripts: document.getElementById('extractScripts').checked,
+                extract_styles: document.getElementById('extractStyles').checked,
+                extract_headers: document.getElementById('extractHeaders').checked,
+                custom_selectors: customSelectors,
+                user_agent: document.getElementById('userAgent').value,
+                headers: headers,
+                follow_redirects: document.getElementById('followRedirects').checked,
+                respect_robots_txt: document.getElementById('respectRobotsTxt').checked
+            };
+        }
+
+        async function scrapeAdvanced() {
+            const url = document.getElementById('advancedUrl').value;
+            if (!url) {
+                showError('advancedResult', 'Please enter a URL.');
+                return;
+            }
+
+            const options = getAdvancedOptions();
+
+            showLoading('advancedResult');
+
+            try {
+                const response = await fetch('/api/v1/scrape/advanced', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        url: url,
+                        options: options
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showSuccess('advancedResult', data);
+                } else {
+                    showError('advancedResult', data.error || 'Unknown error');
+                }
+            } catch (error) {
+                showError('advancedResult', 'Network error: ' + error.message);
+            }
+        }
+
+        async function exportAdvancedCSV() {
+            const url = document.getElementById('advancedUrl').value;
+            if (!url) {
+                alert('Please enter a URL first.');
+                return;
+            }
+
+            const options = getAdvancedOptions();
+
+            try {
+                const response = await fetch('/api/v1/export/csv/advanced', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        url: url,
+                        options: options
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `advanced_scraped_data_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const data = await response.json();
+                    alert('Export failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Export error: ' + error.message);
+            }
+        }
+
+        async function exportAdvancedJSON() {
+            const url = document.getElementById('advancedUrl').value;
+            if (!url) {
+                alert('Please enter a URL first.');
+                return;
+            }
+
+            const options = getAdvancedOptions();
+
+            try {
+                const response = await fetch('/api/v1/export/json/advanced', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        url: url,
+                        options: options
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `advanced_scraped_data_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const data = await response.json();
+                    alert('Export failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Export error: ' + error.message);
+            }
         }
 
         // Initialize WebSocket connection when page loads
