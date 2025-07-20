@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"web-scraper-api/internal/logger"
+	"web-scraper-api/internal/scheduler"
 
 	"github.com/gorilla/websocket"
 )
@@ -21,10 +22,37 @@ type WebSocketManager struct {
 }
 
 type WebSocketMessage struct {
-	Type    string      `json:"type"`
-	Data    interface{} `json:"data"`
-	Time    time.Time   `json:"time"`
-	Message string      `json:"message,omitempty"`
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+	Time time.Time   `json:"time"`
+}
+
+type ScrapingUpdate struct {
+	URL    string      `json:"url"`
+	Status string      `json:"status"`
+	Data   interface{} `json:"data,omitempty"`
+}
+
+type BatchProgress struct {
+	Total     int    `json:"total"`
+	Completed int    `json:"completed"`
+	Progress  int    `json:"progress"`
+	Current   string `json:"current"`
+}
+
+type ErrorMessage struct {
+	URL   string `json:"url"`
+	Error string `json:"error"`
+}
+
+type ScheduledJobUpdate struct {
+	JobID     string `json:"job_id"`
+	JobName   string `json:"job_name"`
+	Status    string `json:"status"`
+	StartedAt string `json:"started_at,omitempty"`
+	EndedAt   string `json:"ended_at,omitempty"`
+	Duration  string `json:"duration,omitempty"`
+	Error     string `json:"error,omitempty"`
 }
 
 func NewWebSocketManager(logger *logger.Logger) *WebSocketManager {
@@ -37,134 +65,210 @@ func NewWebSocketManager(logger *logger.Logger) *WebSocketManager {
 	}
 }
 
-func (manager *WebSocketManager) Start() {
+func (w *WebSocketManager) Start() {
 	for {
 		select {
-		case client := <-manager.register:
-			manager.mutex.Lock()
-			manager.clients[client] = true
-			manager.mutex.Unlock()
-			manager.logger.Infof("WebSocket client connected. Total clients: %d", len(manager.clients))
+		case client := <-w.register:
+			w.mutex.Lock()
+			w.clients[client] = true
+			w.mutex.Unlock()
+			w.logger.Infof("WebSocket client connected. Total clients: %d", len(w.clients))
 
-		case client := <-manager.unregister:
-			manager.mutex.Lock()
-			if _, ok := manager.clients[client]; ok {
-				delete(manager.clients, client)
-				client.Close()
+			// Send welcome message
+			welcomeMsg := WebSocketMessage{
+				Type: "connected",
+				Data: map[string]interface{}{
+					"message": "Connected to WebCrawler WebSocket",
+					"time":    time.Now(),
+				},
+				Time: time.Now(),
 			}
-			manager.mutex.Unlock()
-			manager.logger.Infof("WebSocket client disconnected. Total clients: %d", len(manager.clients))
+			w.sendToClient(client, welcomeMsg)
 
-		case message := <-manager.broadcast:
-			manager.mutex.RLock()
-			for client := range manager.clients {
-				if err := client.WriteJSON(message); err != nil {
-					manager.logger.Errorf("Error sending message to client: %v", err)
-					client.Close()
-					delete(manager.clients, client)
-				}
-			}
-			manager.mutex.RUnlock()
+		case client := <-w.unregister:
+			w.mutex.Lock()
+			delete(w.clients, client)
+			w.mutex.Unlock()
+			client.Close()
+			w.logger.Infof("WebSocket client disconnected. Total clients: %d", len(w.clients))
+
+		case message := <-w.broadcast:
+			w.broadcastMessage(message)
 		}
 	}
 }
 
-func (manager *WebSocketManager) Broadcast(message interface{}) {
-	manager.broadcast <- message
-}
-
-func (manager *WebSocketManager) BroadcastScrapingUpdate(url string, status string, data interface{}) {
-	message := WebSocketMessage{
-		Type: "scraping_update",
-		Data: map[string]interface{}{
-			"url":    url,
-			"status": status,
-			"data":   data,
+func (w *WebSocketManager) HandleWebSocket(writer http.ResponseWriter, request *http.Request) {
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true // Allow all origins for development
 		},
-		Time: time.Now(),
 	}
-	manager.Broadcast(message)
-}
 
-func (manager *WebSocketManager) BroadcastBatchProgress(total int, completed int, current string) {
-	message := WebSocketMessage{
-		Type: "batch_progress",
-		Data: map[string]interface{}{
-			"total":     total,
-			"completed": completed,
-			"current":   current,
-			"progress":  float64(completed) / float64(total) * 100,
-		},
-		Time: time.Now(),
-	}
-	manager.Broadcast(message)
-}
-
-func (manager *WebSocketManager) BroadcastError(url string, error string) {
-	message := WebSocketMessage{
-		Type: "error",
-		Data: map[string]interface{}{
-			"url":   url,
-			"error": error,
-		},
-		Time: time.Now(),
-	}
-	manager.Broadcast(message)
-}
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for development
-	},
-}
-
-func (manager *WebSocketManager) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
-		manager.logger.Errorf("WebSocket upgrade failed: %v", err)
+		w.logger.Errorf("WebSocket upgrade failed: %v", err)
 		return
 	}
 
-	// Register new client
-	manager.register <- conn
-
-	// Send welcome message
-	welcomeMessage := WebSocketMessage{
-		Type:    "connected",
-		Message: "Connected to WebCrawler WebSocket",
-		Time:    time.Now(),
-	}
-	if err := conn.WriteJSON(welcomeMessage); err != nil {
-		manager.logger.Errorf("Error sending welcome message: %v", err)
-		conn.Close()
-		return
-	}
+	w.register <- conn
 
 	// Handle incoming messages
 	go func() {
 		defer func() {
-			manager.unregister <- conn
+			w.unregister <- conn
 		}()
 
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					manager.logger.Errorf("WebSocket read error: %v", err)
+					w.logger.Errorf("WebSocket read error: %v", err)
 				}
 				break
 			}
 
-			// Echo message back (for testing)
-			var msg WebSocketMessage
+			// Echo message back for testing
+			var msg map[string]interface{}
 			if err := json.Unmarshal(message, &msg); err == nil {
-				msg.Type = "echo"
-				msg.Time = time.Now()
-				if err := conn.WriteJSON(msg); err != nil {
-					manager.logger.Errorf("Error sending echo message: %v", err)
-					break
+				echoMsg := WebSocketMessage{
+					Type: "echo",
+					Data: msg,
+					Time: time.Now(),
 				}
+				w.sendToClient(conn, echoMsg)
 			}
 		}
 	}()
+}
+
+func (w *WebSocketManager) broadcastMessage(message interface{}) {
+	w.mutex.RLock()
+	defer w.mutex.RUnlock()
+
+	for client := range w.clients {
+		w.sendToClient(client, message)
+	}
+}
+
+func (w *WebSocketManager) sendToClient(client *websocket.Conn, message interface{}) {
+	err := client.WriteJSON(message)
+	if err != nil {
+		w.logger.Errorf("Failed to send WebSocket message: %v", err)
+		client.Close()
+		delete(w.clients, client)
+	}
+}
+
+func (w *WebSocketManager) BroadcastScrapingUpdate(url, status string, data interface{}) {
+	msg := WebSocketMessage{
+		Type: "scraping_update",
+		Data: ScrapingUpdate{
+			URL:    url,
+			Status: status,
+			Data:   data,
+		},
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
+}
+
+func (w *WebSocketManager) BroadcastBatchProgress(total, completed int, current string) {
+	progress := 0
+	if total > 0 {
+		progress = (completed * 100) / total
+	}
+
+	msg := WebSocketMessage{
+		Type: "batch_progress",
+		Data: BatchProgress{
+			Total:     total,
+			Completed: completed,
+			Progress:  progress,
+			Current:   current,
+		},
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
+}
+
+func (w *WebSocketManager) BroadcastError(url, error string) {
+	msg := WebSocketMessage{
+		Type: "error",
+		Data: ErrorMessage{
+			URL:   url,
+			Error: error,
+		},
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
+}
+
+// New methods for scheduled job updates
+func (w *WebSocketManager) BroadcastScheduledJobStart(jobResult *scheduler.JobResult) {
+	msg := WebSocketMessage{
+		Type: "scheduled_job_start",
+		Data: ScheduledJobUpdate{
+			JobID:     jobResult.JobID,
+			JobName:   jobResult.JobName,
+			Status:    string(jobResult.Status),
+			StartedAt: jobResult.StartedAt.Format(time.RFC3339),
+		},
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
+}
+
+func (w *WebSocketManager) BroadcastScheduledJobComplete(jobResult *scheduler.JobResult) {
+	msg := WebSocketMessage{
+		Type: "scheduled_job_complete",
+		Data: ScheduledJobUpdate{
+			JobID:     jobResult.JobID,
+			JobName:   jobResult.JobName,
+			Status:    string(jobResult.Status),
+			StartedAt: jobResult.StartedAt.Format(time.RFC3339),
+			EndedAt:   jobResult.EndedAt.Format(time.RFC3339),
+			Duration:  jobResult.Duration.String(),
+		},
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
+}
+
+func (w *WebSocketManager) BroadcastScheduledJobError(jobResult *scheduler.JobResult) {
+	msg := WebSocketMessage{
+		Type: "scheduled_job_error",
+		Data: ScheduledJobUpdate{
+			JobID:     jobResult.JobID,
+			JobName:   jobResult.JobName,
+			Status:    string(jobResult.Status),
+			StartedAt: jobResult.StartedAt.Format(time.RFC3339),
+			EndedAt:   jobResult.EndedAt.Format(time.RFC3339),
+			Duration:  jobResult.Duration.String(),
+			Error:     jobResult.Error,
+		},
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
+}
+
+func (w *WebSocketManager) BroadcastScheduledJobList(jobs []*scheduler.ScheduledJob) {
+	msg := WebSocketMessage{
+		Type: "scheduled_jobs_list",
+		Data: map[string]interface{}{
+			"jobs":  jobs,
+			"count": len(jobs),
+		},
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
+}
+
+func (w *WebSocketManager) BroadcastScheduledJobStats(stats map[string]interface{}) {
+	msg := WebSocketMessage{
+		Type: "scheduled_jobs_stats",
+		Data: stats,
+		Time: time.Now(),
+	}
+	w.broadcast <- msg
 }

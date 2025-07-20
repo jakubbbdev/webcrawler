@@ -618,6 +618,65 @@
             color: white;
             font-size: 12px;
         }
+
+        /* New styles for Scheduled Jobs Tab */
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .job-card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .job-header h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .job-status {
+            padding: 0.4rem 0.8rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .status-active { background: var(--success-color); }
+        .status-paused { background: var(--warning-color); }
+        .status-running { background: var(--primary-color); }
+        .status-error { background: var(--error-color); }
+        .status-complete { background: var(--success-color); }
+        .status-unknown { background: var(--text-secondary); }
+
+        .job-details p {
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .job-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -651,6 +710,9 @@
                         </div>
                         <div class="tab" onclick="switchTab('advanced')">
                             <i class="fas fa-cogs"></i> Advanced
+                        </div>
+                        <div class="tab" onclick="switchTab('scheduled')">
+                            <i class="fas fa-clock"></i> Scheduled Jobs
                         </div>
                         <div class="tab" onclick="switchTab('stats')">
                             <i class="fas fa-chart-bar"></i> Statistics
@@ -907,6 +969,71 @@
                         <div id="advancedResult"></div>
                     </div>
 
+                    <!-- Scheduled Jobs Tab -->
+                    <div id="scheduled" class="tab-content">
+                        <div class="card-header">
+                            <div class="card-icon icon-warning">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h2>Scheduled Jobs</h2>
+                        </div>
+                        
+                        <!-- Job Creation Form -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-plus"></i> Create New Job</h3>
+                            <div class="form-group">
+                                <label class="form-label" for="jobName">Job Name</label>
+                                <input type="text" id="jobName" class="form-input" placeholder="Daily Website Check">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="jobDescription">Description</label>
+                                <textarea id="jobDescription" class="form-textarea" placeholder="Optional description of the job"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="jobSchedule">Cron Schedule</label>
+                                <input type="text" id="jobSchedule" class="form-input" placeholder="0 0 * * *" value="0 0 * * *">
+                                <small style="color: var(--text-secondary); margin-top: 0.25rem; display: block;">
+                                    Format: minute hour day month weekday (e.g., "0 0 * * *" = daily at midnight)
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="jobUrl">Website URL</label>
+                                <input type="url" id="jobUrl" class="form-input" placeholder="https://example.com">
+                            </div>
+                            
+                            <button class="btn btn-primary" onclick="createScheduledJob()">
+                                <i class="fas fa-plus"></i> Create Job
+                            </button>
+                        </div>
+
+                        <!-- Job Management -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-list"></i> Job Management</h3>
+                            <div class="btn-group">
+                                <button class="btn btn-secondary" onclick="loadScheduledJobs()">
+                                    <i class="fas fa-refresh"></i> Refresh Jobs
+                                </button>
+                                <button class="btn btn-secondary" onclick="exportScheduledJobs()">
+                                    <i class="fas fa-download"></i> Export Jobs
+                                </button>
+                                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">
+                                    <i class="fas fa-upload"></i> Import Jobs
+                                </button>
+                                <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importScheduledJobs(this)">
+                            </div>
+                            
+                            <div id="scheduledJobsList"></div>
+                        </div>
+
+                        <!-- Job Statistics -->
+                        <div class="options-section">
+                            <h3><i class="fas fa-chart-pie"></i> Job Statistics</h3>
+                            <div id="schedulerStats"></div>
+                        </div>
+                        
+                        <div id="scheduledResult"></div>
+                    </div>
+
                     <!-- Statistics Tab -->
                     <div id="stats" class="tab-content">
                         <div class="card-header">
@@ -1109,7 +1236,7 @@
         function handleWebSocketMessage(message) {
             switch(message.type) {
                 case 'connected':
-                    addUpdate(message.message, 'success');
+                    addUpdate(message.data.message, 'success');
                     break;
                 case 'scraping_update':
                     const data = message.data;
@@ -1127,6 +1254,29 @@
                 case 'error':
                     const errorData = message.data;
                     addUpdate(`Error scraping ${errorData.url}: ${errorData.error}`, 'error');
+                    break;
+                case 'scheduled_job_start':
+                    const startData = message.data;
+                    addUpdate(`Scheduled job started: ${startData.job_name} (${startData.job_id})`, 'progress');
+                    loadScheduledJobs(); // Refresh job list
+                    break;
+                case 'scheduled_job_complete':
+                    const completeData = message.data;
+                    addUpdate(`Scheduled job completed: ${completeData.job_name} - Duration: ${completeData.duration}`, 'success');
+                    loadScheduledJobs(); // Refresh job list
+                    loadSchedulerStats(); // Refresh stats
+                    break;
+                case 'scheduled_job_error':
+                    const errorJobData = message.data;
+                    addUpdate(`Scheduled job failed: ${errorJobData.job_name} - Error: ${errorJobData.error}`, 'error');
+                    loadScheduledJobs(); // Refresh job list
+                    loadSchedulerStats(); // Refresh stats
+                    break;
+                case 'scheduled_jobs_list':
+                    // Job list updated via WebSocket
+                    break;
+                case 'scheduled_jobs_stats':
+                    // Stats updated via WebSocket
                     break;
                 case 'echo':
                     console.log('Echo message:', message);
@@ -1536,7 +1686,298 @@
         // Initialize WebSocket connection when page loads
         document.addEventListener('DOMContentLoaded', function() {
             connectWebSocket();
+            loadScheduledJobs();
+            loadSchedulerStats();
         });
+
+        // Scheduled Jobs functions
+        async function createScheduledJob() {
+            const name = document.getElementById('jobName').value;
+            const description = document.getElementById('jobDescription').value;
+            const schedule = document.getElementById('jobSchedule').value;
+            const url = document.getElementById('jobUrl').value;
+
+            if (!name || !schedule || !url) {
+                alert('Please fill in all required fields (Name, Schedule, URL).');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/v1/scheduler/jobs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description,
+                        schedule: schedule,
+                        url: url
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Job created successfully!');
+                    // Clear form
+                    document.getElementById('jobName').value = '';
+                    document.getElementById('jobDescription').value = '';
+                    document.getElementById('jobSchedule').value = '0 0 * * *';
+                    document.getElementById('jobUrl').value = '';
+                    // Reload jobs
+                    loadScheduledJobs();
+                } else {
+                    alert('Failed to create job: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error creating job: ' + error.message);
+            }
+        }
+
+        async function loadScheduledJobs() {
+            try {
+                const response = await fetch('/api/v1/scheduler/jobs');
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayScheduledJobs(data.data);
+                } else {
+                    console.error('Failed to load jobs:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading jobs:', error);
+            }
+        }
+
+        function displayScheduledJobs(jobs) {
+            const container = document.getElementById('scheduledJobsList');
+            
+            if (jobs.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">No scheduled jobs found.</p>';
+                return;
+            }
+
+            let html = '<div class="jobs-grid">';
+            jobs.forEach(job => {
+                const statusClass = getStatusClass(job.status);
+                const nextRun = job.next_run ? new Date(job.next_run).toLocaleString() : 'N/A';
+                const lastRun = job.last_run ? new Date(job.last_run).toLocaleString() : 'Never';
+
+                html += `
+                    <div class="job-card">
+                        <div class="job-header">
+                            <h4>${job.name}</h4>
+                            <span class="job-status ${statusClass}">${job.status}</span>
+                        </div>
+                        <div class="job-details">
+                            <p><strong>Description:</strong> ${job.description || 'No description'}</p>
+                            <p><strong>URL:</strong> ${job.url}</p>
+                            <p><strong>Schedule:</strong> ${job.schedule}</p>
+                            <p><strong>Next Run:</strong> ${nextRun}</p>
+                            <p><strong>Last Run:</strong> ${lastRun}</p>
+                            <p><strong>Runs:</strong> ${job.run_count} | <strong>Errors:</strong> ${job.error_count}</p>
+                        </div>
+                        <div class="job-actions">
+                            ${job.status === 'active' ? 
+                                `<button class="btn btn-warning" onclick="pauseJob('${job.id}')">Pause</button>` :
+                                `<button class="btn btn-success" onclick="resumeJob('${job.id}')">Resume</button>`
+                            }
+                            <button class="btn btn-primary" onclick="runJobNow('${job.id}')">Run Now</button>
+                            <button class="btn btn-danger" onclick="deleteJob('${job.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        function getStatusClass(status) {
+            switch (status) {
+                case 'active': return 'status-active';
+                case 'paused': return 'status-paused';
+                case 'running': return 'status-running';
+                case 'error': return 'status-error';
+                case 'complete': return 'status-complete';
+                default: return 'status-unknown';
+            }
+        }
+
+        async function pauseJob(jobId) {
+            try {
+                const response = await fetch(`/api/v1/scheduler/jobs/${jobId}/pause`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    loadScheduledJobs();
+                } else {
+                    const data = await response.json();
+                    alert('Failed to pause job: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error pausing job: ' + error.message);
+            }
+        }
+
+        async function resumeJob(jobId) {
+            try {
+                const response = await fetch(`/api/v1/scheduler/jobs/${jobId}/resume`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    loadScheduledJobs();
+                } else {
+                    const data = await response.json();
+                    alert('Failed to resume job: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error resuming job: ' + error.message);
+            }
+        }
+
+        async function runJobNow(jobId) {
+            try {
+                const response = await fetch(`/api/v1/scheduler/jobs/${jobId}/run`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('Job started successfully!');
+                } else {
+                    const data = await response.json();
+                    alert('Failed to run job: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error running job: ' + error.message);
+            }
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('Are you sure you want to delete this job?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/scheduler/jobs/${jobId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadScheduledJobs();
+                } else {
+                    const data = await response.json();
+                    alert('Failed to delete job: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error deleting job: ' + error.message);
+            }
+        }
+
+        async function loadSchedulerStats() {
+            try {
+                const response = await fetch('/api/v1/scheduler/stats');
+                const data = await response.json();
+
+                if (response.ok) {
+                    displaySchedulerStats(data.data);
+                } else {
+                    console.error('Failed to load stats:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        function displaySchedulerStats(stats) {
+            const container = document.getElementById('schedulerStats');
+            
+            container.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total_jobs}</div>
+                        <div class="stat-label">Total Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.active_jobs}</div>
+                        <div class="stat-label">Active Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.paused_jobs}</div>
+                        <div class="stat-label">Paused Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.running_jobs}</div>
+                        <div class="stat-label">Running Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.error_jobs}</div>
+                        <div class="stat-label">Error Jobs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total_runs}</div>
+                        <div class="stat-label">Total Runs</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total_errors}</div>
+                        <div class="stat-label">Total Errors</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function exportScheduledJobs() {
+            try {
+                const response = await fetch('/api/v1/scheduler/export');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `scheduled_jobs_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('Failed to export jobs');
+                }
+            } catch (error) {
+                alert('Error exporting jobs: ' + error.message);
+            }
+        }
+
+        async function importScheduledJobs(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/v1/scheduler/import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Jobs imported successfully!');
+                    loadScheduledJobs();
+                } else {
+                    alert('Failed to import jobs: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Error importing jobs: ' + error.message);
+            }
+
+            // Clear file input
+            input.value = '';
+        }
     </script>
 </body>
 </html> 

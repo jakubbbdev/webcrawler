@@ -8,6 +8,7 @@ import (
 
 	"web-scraper-api/internal/config"
 	"web-scraper-api/internal/logger"
+	"web-scraper-api/internal/scheduler"
 	"web-scraper-api/internal/scraper"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,7 @@ type Server struct {
 	server         *http.Server
 	config         *config.Config
 	scraperService *scraper.Service
+	scheduler      *scheduler.Scheduler
 	logger         *logger.Logger
 	wsManager      *WebSocketManager
 }
@@ -43,18 +45,30 @@ func NewServer(cfg *config.Config, scraperService *scraper.Service, logger *logg
 	// Initialize WebSocket manager
 	wsManager := NewWebSocketManager(logger)
 
+	// Initialize Scheduler
+	scheduler := scheduler.NewScheduler(logger, scraperService)
+
 	server := &Server{
 		router:         router,
 		config:         cfg,
 		scraperService: scraperService,
+		scheduler:      scheduler,
 		logger:         logger,
 		wsManager:      wsManager,
 	}
 
+	// Set up scheduler callbacks
+	scheduler.SetCallbacks(
+		server.onScheduledJobStart,
+		server.onScheduledJobComplete,
+		server.onScheduledJobError,
+	)
+
 	server.setupRoutes()
 
-	// Start WebSocket manager
+	// Start WebSocket manager and Scheduler
 	go wsManager.Start()
+	go scheduler.Start()
 
 	return server
 }
@@ -79,6 +93,19 @@ func (s *Server) setupRoutes() {
 		api.GET("/export/json", s.exportToJSON)
 		api.POST("/export/csv/advanced", s.exportToCSVAdvanced)
 		api.POST("/export/json/advanced", s.exportToJSONAdvanced)
+
+		// Scheduled Jobs Routes
+		api.GET("/scheduler/jobs", s.getScheduledJobs)
+		api.POST("/scheduler/jobs", s.createScheduledJob)
+		api.GET("/scheduler/jobs/:id", s.getScheduledJob)
+		api.PUT("/scheduler/jobs/:id", s.updateScheduledJob)
+		api.DELETE("/scheduler/jobs/:id", s.deleteScheduledJob)
+		api.POST("/scheduler/jobs/:id/pause", s.pauseScheduledJob)
+		api.POST("/scheduler/jobs/:id/resume", s.resumeScheduledJob)
+		api.POST("/scheduler/jobs/:id/run", s.runScheduledJobNow)
+		api.GET("/scheduler/stats", s.getSchedulerStats)
+		api.GET("/scheduler/export", s.exportScheduledJobs)
+		api.POST("/scheduler/import", s.importScheduledJobs)
 
 		// WebSocket for live updates
 		api.GET("/ws", s.handleWebSocket)
@@ -707,4 +734,309 @@ func corsMiddleware() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// Scheduler callback methods
+func (s *Server) onScheduledJobStart(jobResult *scheduler.JobResult) {
+	s.wsManager.BroadcastScheduledJobStart(jobResult)
+}
+
+func (s *Server) onScheduledJobComplete(jobResult *scheduler.JobResult) {
+	s.wsManager.BroadcastScheduledJobComplete(jobResult)
+}
+
+func (s *Server) onScheduledJobError(jobResult *scheduler.JobResult) {
+	s.wsManager.BroadcastScheduledJobError(jobResult)
+}
+
+// Scheduled Jobs API endpoints
+func (s *Server) getScheduledJobs(c *gin.Context) {
+	jobs := s.scheduler.GetAllJobs()
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    jobs,
+		"count":   len(jobs),
+	})
+}
+
+func (s *Server) createScheduledJob(c *gin.Context) {
+	var request struct {
+		Name        string                   `json:"name" binding:"required"`
+		Description string                   `json:"description"`
+		Schedule    string                   `json:"schedule" binding:"required"`
+		URL         string                   `json:"url" binding:"required"`
+		Options     *scraper.CrawlingOptions `json:"options"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Name, schedule, and URL are required",
+		})
+		return
+	}
+
+	// Use default options if none provided
+	if request.Options == nil {
+		request.Options = &scraper.CrawlingOptions{
+			MaxDepth:         1,
+			MaxPages:         1,
+			Timeout:          30 * time.Second,
+			Delay:            0,
+			ExtractImages:    true,
+			ExtractLinks:     true,
+			ExtractForms:     false,
+			ExtractTables:    false,
+			ExtractScripts:   false,
+			ExtractStyles:    false,
+			ExtractHeaders:   false,
+			UserAgent:        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+			FollowRedirects:  true,
+			RespectRobotsTxt: false,
+		}
+	}
+
+	job := &scheduler.ScheduledJob{
+		Name:        request.Name,
+		Description: request.Description,
+		Schedule:    request.Schedule,
+		URL:         request.URL,
+		Options:     request.Options,
+	}
+
+	if err := s.scheduler.AddJob(job); err != nil {
+		s.logger.Errorf("Failed to create scheduled job: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Broadcast job list update
+	s.wsManager.BroadcastScheduledJobList(s.scheduler.GetAllJobs())
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    job,
+	})
+}
+
+func (s *Server) getScheduledJob(c *gin.Context) {
+	jobID := c.Param("id")
+	job, err := s.scheduler.GetJob(jobID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Job not found",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    job,
+	})
+}
+
+func (s *Server) updateScheduledJob(c *gin.Context) {
+	jobID := c.Param("id")
+	job, err := s.scheduler.GetJob(jobID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Job not found",
+		})
+		return
+	}
+
+	var request struct {
+		Name        string                   `json:"name"`
+		Description string                   `json:"description"`
+		Schedule    string                   `json:"schedule"`
+		URL         string                   `json:"url"`
+		Options     *scraper.CrawlingOptions `json:"options"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request data",
+		})
+		return
+	}
+
+	// Update fields if provided
+	if request.Name != "" {
+		job.Name = request.Name
+	}
+	if request.Description != "" {
+		job.Description = request.Description
+	}
+	if request.Schedule != "" {
+		job.Schedule = request.Schedule
+	}
+	if request.URL != "" {
+		job.URL = request.URL
+	}
+	if request.Options != nil {
+		job.Options = request.Options
+	}
+
+	job.UpdatedAt = time.Now()
+
+	// Remove and re-add job to update schedule
+	if err := s.scheduler.RemoveJob(jobID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update job",
+		})
+		return
+	}
+
+	if err := s.scheduler.AddJob(job); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update job schedule",
+		})
+		return
+	}
+
+	// Broadcast job list update
+	s.wsManager.BroadcastScheduledJobList(s.scheduler.GetAllJobs())
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    job,
+	})
+}
+
+func (s *Server) deleteScheduledJob(c *gin.Context) {
+	jobID := c.Param("id")
+	if err := s.scheduler.RemoveJob(jobID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Job not found",
+		})
+		return
+	}
+
+	// Broadcast job list update
+	s.wsManager.BroadcastScheduledJobList(s.scheduler.GetAllJobs())
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Job deleted successfully",
+	})
+}
+
+func (s *Server) pauseScheduledJob(c *gin.Context) {
+	jobID := c.Param("id")
+	if err := s.scheduler.PauseJob(jobID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Broadcast job list update
+	s.wsManager.BroadcastScheduledJobList(s.scheduler.GetAllJobs())
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Job paused successfully",
+	})
+}
+
+func (s *Server) resumeScheduledJob(c *gin.Context) {
+	jobID := c.Param("id")
+	if err := s.scheduler.ResumeJob(jobID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	// Broadcast job list update
+	s.wsManager.BroadcastScheduledJobList(s.scheduler.GetAllJobs())
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Job resumed successfully",
+	})
+}
+
+func (s *Server) runScheduledJobNow(c *gin.Context) {
+	jobID := c.Param("id")
+	if err := s.scheduler.RunJobNow(jobID); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Job started successfully",
+	})
+}
+
+func (s *Server) getSchedulerStats(c *gin.Context) {
+	stats := s.scheduler.GetJobStats()
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    stats,
+	})
+}
+
+func (s *Server) exportScheduledJobs(c *gin.Context) {
+	data, err := s.scheduler.ExportJobs()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to export jobs",
+		})
+		return
+	}
+
+	c.Header("Content-Type", "application/json")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=scheduled_jobs_%s.json", time.Now().Format("20060102_150405")))
+	c.Data(http.StatusOK, "application/json", data)
+}
+
+func (s *Server) importScheduledJobs(c *gin.Context) {
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "No file provided",
+		})
+		return
+	}
+
+	// Read file content
+	f, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to read file",
+		})
+		return
+	}
+	defer f.Close()
+
+	// Read all data
+	data := make([]byte, file.Size)
+	_, err = f.Read(data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to read file content",
+		})
+		return
+	}
+
+	// Import jobs
+	if err := s.scheduler.ImportJobs(data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to import jobs: " + err.Error(),
+		})
+		return
+	}
+
+	// Broadcast job list update
+	s.wsManager.BroadcastScheduledJobList(s.scheduler.GetAllJobs())
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Jobs imported successfully",
+	})
 }

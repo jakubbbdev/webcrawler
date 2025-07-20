@@ -304,7 +304,7 @@ For questions or issues, please create an issue on GitHub.
 - [ ] Authentication & Authorization
 - [ ] Database Integration
 - [ ] Caching Layer
-- [ ] More Crawling Options
+- [X] More Crawling Options
 - [ ] Scheduled Crawling
 - [ ] Sitemap Generation
 - [ ] SEO Analysis
