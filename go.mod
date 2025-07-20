@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/PuerkitoBio/goquery v1.8.1
 	github.com/gin-gonic/gin v1.9.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.16.0
 )

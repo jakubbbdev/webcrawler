@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test - WebCrawler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .messages {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .message-scraping {
+            background: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+        .message-progress {
+            background: #fff3e0;
+            border-left: 3px solid #ff9800;
+        }
+        .message-error {
+            background: #ffebee;
+            border-left: 3px solid #f44336;
+        }
+        .message-success {
+            background: #e8f5e8;
+            border-left: 3px solid #4caf50;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .test-urls {
+            margin: 20px 0;
+        }
+        .test-urls input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .server-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 3px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕷️ WebCrawler WebSocket Test</h1>
+        
+        <div class="server-info">
+            <strong>Server:</strong> http://localhost:8081<br>
+            <strong>WebSocket:</strong> ws://localhost:8081/api/v1/ws
+        </div>
+        
+        <div id="status" class="status disconnected">
+            WebSocket Status: Disconnected
+        </div>
+        
+        <div>
+            <button onclick="connect()">Connect</button>
+            <button onclick="disconnect()">Disconnect</button>
+            <button onclick="clearMessages()">Clear Messages</button>
+        </div>
+        
+        <div class="test-urls">
+            <h3>Test URLs:</h3>
+            <input type="text" id="testUrl" value="https://httpbin.org/get" placeholder="Enter URL to test">
+            <button onclick="testSingleScrape()">Test Single Scrape</button>
+            <button onclick="testBatchScrape()">Test Batch Scrape</button>
+        </div>
+        
+        <h3>Live Messages:</h3>
+        <div id="messages" class="messages">
+            <div class="message">Waiting for WebSocket connection...</div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+        const SERVER_PORT = 8081; // Updated port
+
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            if (connected) {
+                status.textContent = 'WebSocket Status: Connected';
+                status.className = 'status connected';
+            } else {
+                status.textContent = 'WebSocket Status: Disconnected';
+                status.className = 'status disconnected';
+            }
+        }
+
+        function addMessage(message, type = 'info') {
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            messageDiv.innerHTML = `
+                <strong>[${new Date().toLocaleTimeString()}]</strong> ${message}
+            `;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                addMessage('Already connected!', 'info');
+                return;
+            }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:${SERVER_PORT}/api/v1/ws`;
+            
+            addMessage(`Connecting to ${wsUrl}...`, 'info');
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                isConnected = true;
+                updateStatus(true);
+                addMessage('WebSocket connected successfully!', 'success');
+            };
+            
+            ws.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+            
+            ws.onclose = function() {
+                isConnected = false;
+                updateStatus(false);
+                addMessage('WebSocket disconnected', 'error');
+            };
+            
+            ws.onerror = function(error) {
+                addMessage(`WebSocket error: ${error}`, 'error');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+                isConnected = false;
+                updateStatus(false);
+                addMessage('WebSocket disconnected manually', 'info');
+            }
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '<div class="message">Messages cleared...</div>';
+        }
+
+        function handleMessage(message) {
+            switch(message.type) {
+                case 'connected':
+                    addMessage(`Connected: ${message.message}`, 'success');
+                    break;
+                case 'scraping_update':
+                    const data = message.data;
+                    if (data.status === 'started') {
+                        addMessage(`🔄 Started scraping: ${data.url}`, 'scraping');
+                    } else if (data.status === 'completed') {
+                        addMessage(`✅ Completed scraping: ${data.url}`, 'success');
+                    }
+                    break;
+                case 'batch_progress':
+                    const progressData = message.data;
+                    addMessage(`📊 Batch progress: ${progressData.completed}/${progressData.total} (${progressData.progress.toFixed(1)}%) - ${progressData.current}`, 'progress');
+                    break;
+                case 'error':
+                    const errorData = message.data;
+                    addMessage(`❌ Error scraping ${errorData.url}: ${errorData.error}`, 'error');
+                    break;
+                case 'echo':
+                    addMessage(`Echo: ${JSON.stringify(message)}`, 'info');
+                    break;
+                default:
+                    addMessage(`Unknown message type: ${message.type}`, 'info');
+            }
+        }
+
+        async function testSingleScrape() {
+            const url = document.getElementById('testUrl').value;
+            if (!url) {
+                addMessage('Please enter a URL first', 'error');
+                return;
+            }
+
+            addMessage(`Testing single scrape for: ${url}`, 'info');
+
+            try {
+                const response = await fetch(`http://localhost:${SERVER_PORT}/api/v1/scrape`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    addMessage(`Single scrape completed successfully`, 'success');
+                } else {
+                    addMessage(`Single scrape failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addMessage(`Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testBatchScrape() {
+            const url = document.getElementById('testUrl').value;
+            if (!url) {
+                addMessage('Please enter a URL first', 'error');
+                return;
+            }
+
+            const testUrls = [
+                url,
+                'https://httpbin.org/get',
+                'https://jsonplaceholder.typicode.com/posts/1'
+            ];
+
+            addMessage(`Testing batch scrape for ${testUrls.length} URLs`, 'info');
+
+            try {
+                const response = await fetch(`http://localhost:${SERVER_PORT}/api/v1/scrape/batch`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ urls: testUrls })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    addMessage(`Batch scrape completed: ${data.count} successful`, 'success');
+                } else {
+                    addMessage(`Batch scrape failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addMessage(`Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-connect when page loads
+        window.addEventListener('load', function() {
+            setTimeout(connect, 1000);
+        });
+    </script>
+</body>
+</html> 

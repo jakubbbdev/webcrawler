@@ -1,86 +1,114 @@
 # 🕷️ WebCrawler
 
-Eine moderne, in Go geschriebene REST API zum Crawlen und Scrapen von Websites mit einer schönen Web-Oberfläche.
+A modern REST API written in Go for crawling and scraping websites with a beautiful web interface.
 
 ## ✨ Features
 
-- **REST API**: Vollständige REST API für Website-Crawling
-- **Batch Processing**: Mehrere Websites gleichzeitig crawlen
-- **Website Statistiken**: Detaillierte Statistiken über Websites
-- **Moderne UI**: Schöne Web-Oberfläche mit Tabs
-- **Concurrency**: Parallele Verarbeitung mit Goroutines
-- **Graceful Shutdown**: Sauberes Herunterfahren
-- **Strukturiertes Logging**: JSON-basiertes Logging
-- **Konfiguration**: Umgebungsvariablen und YAML-Konfiguration
+- **REST API**: Complete REST API for website crawling
+- **Batch Processing**: Crawl multiple websites simultaneously
+- **Website Statistics**: Detailed statistics about websites
+- **Modern UI**: Beautiful web interface with tabs
+- **Concurrency**: Parallel processing with Goroutines
+- **Graceful Shutdown**: Clean shutdown process
+- **Structured Logging**: JSON-based logging
+- **Configuration**: Environment variables and YAML configuration
 - **CORS Support**: Cross-Origin Resource Sharing
-- **Version Management**: Professionelles Version-Handling
+- **Version Management**: Professional version handling
+- **WebSocket Support**: Real-time live updates during crawling
+- **Export Functionality**: Export data to CSV and JSON formats
 
 ## 🚀 Installation
 
-### Voraussetzungen
+### Prerequisites
 
-- Go 1.21 oder höher
+- Go 1.21 or higher
 - Git
 
 ### Installation
 
 ```bash
-# Repository klonen
-git clone https://github.com/dein-username/webcrawler.git
+# Clone repository
+git clone https://github.com/your-username/webcrawler.git
 cd webcrawler
 
-# Dependencies installieren
+# Install dependencies
 go mod tidy
 
-# Anwendung starten
+# Start application
 go run main.go
 ```
 
-### Mit Docker
+### With Docker
 
 ```bash
-# Docker Image bauen
+# Build Docker image
 docker build -t webcrawler .
 
-# Container starten
+# Start container
 docker run -p 8080:8080 webcrawler
 ```
 
-## 📖 Verwendung
+## 📖 Usage
 
 ### Web Interface
 
-Öffne deinen Browser und gehe zu `http://localhost:8080`
+Open your browser and go to `http://localhost:8080`
 
-### API Endpunkte
+The web interface includes:
+- **Single URL Crawling**: Crawl individual websites
+- **Batch Crawling**: Crawl multiple websites simultaneously
+- **Live Updates**: Real-time progress via WebSocket
+- **Export Options**: Download data as CSV or JSON
+- **Website Statistics**: View detailed analytics
 
-#### 1. Einzelne Website crawlen
+### API Endpoints
+
+#### 1. Crawl single website
 ```bash
 curl -X POST http://localhost:8080/api/v1/scrape \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'
 ```
 
-#### 2. Mehrere Websites crawlen
+#### 2. Crawl multiple websites
 ```bash
 curl -X POST http://localhost:8080/api/v1/scrape/batch \
   -H "Content-Type: application/json" \
   -d '{"urls": ["https://example1.com", "https://example2.com"]}'
 ```
 
-#### 3. Website Statistiken
+#### 3. Website Statistics
 ```bash
-curl http://localhost:8080/api/v1/scrape/stats/https%3A//example.com
+curl http://localhost:8080/api/v1/scrape/stats?url=https://example.com
 ```
 
-#### 4. Health Check
+#### 4. Export to CSV
+```bash
+curl http://localhost:8080/api/v1/export/csv?url=https://example.com
+```
+
+#### 5. Export to JSON
+```bash
+curl http://localhost:8080/api/v1/export/json?url=https://example.com
+```
+
+#### 6. WebSocket Connection
+```javascript
+const ws = new WebSocket('ws://localhost:8080/api/v1/ws');
+ws.onmessage = function(event) {
+    const message = JSON.parse(event.data);
+    console.log('Live update:', message);
+};
+```
+
+#### 7. Health Check
 ```bash
 curl http://localhost:8080/health
 ```
 
-## ⚙️ Konfiguration
+## ⚙️ Configuration
 
-### Umgebungsvariablen
+### Environment Variables
 
 ```bash
 export PORT=8080
@@ -88,7 +116,7 @@ export LOG_LEVEL=info
 export TIMEOUT=30
 ```
 
-### Konfigurationsdatei (config.yaml)
+### Configuration File (config.yaml)
 
 ```yaml
 port: 8080
@@ -138,46 +166,60 @@ timeout: 30
 }
 ```
 
-## 🏗️ Projektstruktur
+### WebSocket Messages
+```json
+{
+  "type": "scraping_update",
+  "data": {
+    "url": "https://example.com",
+    "status": "completed",
+    "data": { /* scraped data */ }
+  },
+  "time": "2024-01-01T12:00:00Z"
+}
+```
+
+## 🏗️ Project Structure
 
 ```
 webcrawler/
-├── main.go                 # Hauptanwendung
+├── main.go                 # Main application
 ├── go.mod                  # Go Module
 ├── go.sum                  # Dependencies Checksum
-├── VERSION                 # Versionsdatei
-├── README.md              # Dokumentation
-├── Dockerfile             # Docker Konfiguration
-├── .gitignore             # Git Ignore
+├── VERSION                 # Version file
+├── README.md              # Documentation
+├── Dockerfile             # Docker configuration
+├── .gitignore             # Git ignore
 ├── config/
-│   └── config.yaml        # Konfigurationsdatei
+│   └── config.yaml        # Configuration file
 ├── templates/
-│   └── index.html         # Web Interface
+│   └── index.html         # Web interface
 ├── internal/
 │   ├── api/
-│   │   └── server.go      # HTTP Server & Routes
+│   │   ├── server.go      # HTTP Server & Routes
+│   │   └── websocket.go   # WebSocket management
 │   ├── config/
-│   │   └── config.go      # Konfigurationsmanagement
+│   │   └── config.go      # Configuration management
 │   ├── logger/
-│   │   └── logger.go      # Strukturiertes Logging
+│   │   └── logger.go      # Structured logging
 │   ├── scraper/
-│   │   └── scraper.go     # Web Crawling Logic
+│   │   └── scraper.go     # Web crawling logic
 │   └── version/
-│       └── version.go     # Version Management
+│       └── version.go     # Version management
 └── tests/
-    └── scraper_test.go    # Unit Tests
+    └── scraper_test.go    # Unit tests
 ```
 
 ## 🧪 Tests
 
 ```bash
-# Alle Tests ausführen
+# Run all tests
 go test ./...
 
-# Tests mit Coverage
+# Tests with coverage
 go test -cover ./...
 
-# Spezifische Tests
+# Specific tests
 go test ./internal/scraper
 ```
 
@@ -215,58 +257,58 @@ services:
       - ./config:/app/config
 ```
 
-## 🔧 Entwicklung
+## 🔧 Development
 
-### Lokale Entwicklung
+### Local Development
 ```bash
-# Dependencies installieren
+# Install dependencies
 go mod tidy
 
-# Anwendung im Debug-Modus starten
+# Start application in debug mode
 LOG_LEVEL=debug go run main.go
 
-# Tests ausführen
+# Run tests
 go test ./...
 ```
 
-### Code Formatierung
+### Code Formatting
 ```bash
-# Code formatieren
+# Format code
 go fmt ./...
 
 # Linting
 golangci-lint run
 ```
 
-## 📝 Lizenz
+## 📝 License
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert. Siehe [LICENSE](LICENSE) für Details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
-## 🤝 Beitragen
+## 🤝 Contributing
 
-1. Fork das Repository
-2. Erstelle einen Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Committe deine Änderungen (`git commit -m 'Add some AmazingFeature'`)
-4. Push zum Branch (`git push origin feature/AmazingFeature`)
-5. Öffne einen Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📞 Support
 
-Bei Fragen oder Problemen erstelle bitte ein Issue auf GitHub.
+For questions or issues, please create an issue on GitHub.
 
 ## 🚀 Roadmap
 
-- [ ] WebSocket Support für Live Updates
+- [x] WebSocket Support for Live Updates
+- [x] Export to CSV/JSON
 - [ ] Rate Limiting
 - [ ] Authentication & Authorization
 - [ ] Database Integration
 - [ ] Caching Layer
 - [ ] More Crawling Options
-- [ ] Export to CSV/JSON
 - [ ] Scheduled Crawling
 - [ ] Sitemap Generation
 - [ ] SEO Analysis
 
 ---
 
-**Entwickelt mit ❤️ in Go** 
+**Developed with ❤️ in Go** 

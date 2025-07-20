@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -39,6 +39,30 @@
         .header p {
             font-size: 1.2rem;
             opacity: 0.9;
+        }
+
+        .ws-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-left: 20px;
+        }
+
+        .ws-connected {
+            background: #10b981;
+            color: white;
+        }
+
+        .ws-disconnected {
+            background: #ef4444;
+            color: white;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
         }
 
         .card {
@@ -94,6 +118,8 @@
             font-size: 16px;
             cursor: pointer;
             transition: transform 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
 
         .btn:hover {
@@ -104,6 +130,14 @@
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
 
         .result {
@@ -126,6 +160,8 @@
             border-radius: 8px;
             overflow-x: auto;
             font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .loading {
@@ -182,21 +218,21 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
             margin-top: 20px;
         }
 
         .stat-card {
             background: #f8f9fa;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             text-align: center;
             border: 1px solid #e1e5e9;
         }
 
         .stat-number {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #667eea;
         }
@@ -204,6 +240,71 @@
         .stat-label {
             color: #666;
             margin-top: 5px;
+            font-size: 0.9rem;
+        }
+
+        .live-updates {
+            background: #1a202c;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .update-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+
+        .update-success {
+            background: #065f46;
+            border-left-color: #10b981;
+        }
+
+        .update-error {
+            background: #7f1d1d;
+            border-left-color: #ef4444;
+        }
+
+        .update-progress {
+            background: #1e3a8a;
+            border-left-color: #3b82f6;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e1e5e9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .export-buttons {
+            margin-top: 15px;
+        }
+
+        .clear-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .clear-btn:hover {
+            background: #dc2626;
         }
     </style>
 </head>
@@ -212,64 +313,191 @@
         <div class="header">
             <h1>🕷️ WebCrawler</h1>
             <p>Crawl and extract data from websites with modern REST API</p>
+            <div id="wsStatus" class="ws-status ws-disconnected">WebSocket: Disconnected</div>
         </div>
 
-        <div class="card">
-            <div class="tabs">
-                <div class="tab active" onclick="switchTab('single')">Single URL</div>
-                <div class="tab" onclick="switchTab('batch')">Multiple URLs</div>
-                <div class="tab" onclick="switchTab('stats')">Website Statistics</div>
-            </div>
+        <div class="main-grid">
+            <div class="main-content">
+                <div class="card">
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab('single')">Single URL</div>
+                        <div class="tab" onclick="switchTab('batch')">Multiple URLs</div>
+                        <div class="tab" onclick="switchTab('stats')">Website Statistics</div>
+                    </div>
 
-            <!-- Single URL Tab -->
-            <div id="single" class="tab-content active">
-                <h2>Website Crawling</h2>
-                <div class="form-group">
-                    <label for="singleUrl">Website URL:</label>
-                    <input type="url" id="singleUrl" placeholder="https://example.com" required>
+                    <!-- Single URL Tab -->
+                    <div id="single" class="tab-content active">
+                        <h2>Website Crawling</h2>
+                        <div class="form-group">
+                            <label for="singleUrl">Website URL:</label>
+                            <input type="url" id="singleUrl" placeholder="https://example.com" required>
+                        </div>
+                        <button class="btn" onclick="scrapeSingle()">Crawl Website</button>
+                        <button class="btn btn-secondary" onclick="exportSingleCSV()">Export CSV</button>
+                        <button class="btn btn-secondary" onclick="exportSingleJSON()">Export JSON</button>
+                        <div id="singleResult"></div>
+                    </div>
+
+                    <!-- Multiple URLs Tab -->
+                    <div id="batch" class="tab-content">
+                        <h2>Batch Crawling</h2>
+                        <div class="form-group">
+                            <label for="batchUrls">Website URLs (one per line):</label>
+                            <textarea id="batchUrls" rows="5" placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com"></textarea>
+                        </div>
+                        <button class="btn" onclick="scrapeBatch()">Batch Crawl</button>
+                        <div class="progress-bar" id="batchProgress" style="display: none;">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                        <div id="batchResult"></div>
+                    </div>
+
+                    <!-- Statistics Tab -->
+                    <div id="stats" class="tab-content">
+                        <h2>Website Statistics</h2>
+                        <div class="form-group">
+                            <label for="statsUrl">Website URL:</label>
+                            <input type="url" id="statsUrl" placeholder="https://example.com" required>
+                        </div>
+                        <button class="btn" onclick="getStats()">Get Statistics</button>
+                        <div id="statsResult"></div>
+                    </div>
                 </div>
-                <button class="btn" onclick="scrapeSingle()">Crawl Website</button>
-                <div id="singleResult"></div>
-            </div>
 
-            <!-- Multiple URLs Tab -->
-            <div id="batch" class="tab-content">
-                <h2>Batch Crawling</h2>
-                <div class="form-group">
-                    <label for="batchUrls">Website URLs (one per line):</label>
-                    <textarea id="batchUrls" rows="5" placeholder="https://example1.com&#10;https://example2.com&#10;https://example3.com"></textarea>
+                <div class="card">
+                    <h2>📚 API Documentation</h2>
+                    <div class="result">
+                        <h3>Endpoints:</h3>
+                        <ul>
+                            <li><strong>POST /api/v1/scrape</strong> - Crawl single website</li>
+                            <li><strong>POST /api/v1/scrape/batch</strong> - Crawl multiple websites</li>
+                            <li><strong>GET /api/v1/scrape/stats?url=</strong> - Website statistics</li>
+                            <li><strong>GET /api/v1/export/csv?url=</strong> - Export to CSV</li>
+                            <li><strong>GET /api/v1/export/json?url=</strong> - Export to JSON</li>
+                            <li><strong>GET /api/v1/ws</strong> - WebSocket for live updates</li>
+                            <li><strong>GET /health</strong> - Health check</li>
+                        </ul>
+                    </div>
                 </div>
-                <button class="btn" onclick="scrapeBatch()">Batch Crawl</button>
-                <div id="batchResult"></div>
             </div>
 
-            <!-- Statistics Tab -->
-            <div id="stats" class="tab-content">
-                <h2>Website Statistics</h2>
-                <div class="form-group">
-                    <label for="statsUrl">Website URL:</label>
-                    <input type="url" id="statsUrl" placeholder="https://example.com" required>
+            <div class="sidebar">
+                <div class="card">
+                    <h2>🔴 Live Updates</h2>
+                    <div class="live-updates" id="liveUpdates">
+                        <p>Connect to WebSocket to see live updates...</p>
+                    </div>
+                    <button class="clear-btn" onclick="clearUpdates()">Clear Updates</button>
                 </div>
-                <button class="btn" onclick="getStats()">Get Statistics</button>
-                <div id="statsResult"></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>📚 API Documentation</h2>
-            <div class="result">
-                <h3>Endpoints:</h3>
-                <ul>
-                    <li><strong>POST /api/v1/scrape</strong> - Crawl single website</li>
-                    <li><strong>POST /api/v1/scrape/batch</strong> - Crawl multiple websites</li>
-                    <li><strong>GET /api/v1/scrape/stats/:url</strong> - Website statistics</li>
-                    <li><strong>GET /health</strong> - Health check</li>
-                </ul>
             </div>
         </div>
     </div>
 
     <script>
+        let ws = null;
+        let isConnected = false;
+
+        // WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/v1/ws`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                isConnected = true;
+                updateWSStatus(true);
+                addUpdate('WebSocket connected successfully', 'success');
+            };
+            
+            ws.onmessage = function(event) {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+            
+            ws.onclose = function() {
+                isConnected = false;
+                updateWSStatus(false);
+                addUpdate('WebSocket disconnected', 'error');
+                // Try to reconnect after 5 seconds
+                setTimeout(connectWebSocket, 5000);
+            };
+            
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                addUpdate('WebSocket error occurred', 'error');
+            };
+        }
+
+        function updateWSStatus(connected) {
+            const status = document.getElementById('wsStatus');
+            if (connected) {
+                status.textContent = 'WebSocket: Connected';
+                status.className = 'ws-status ws-connected';
+            } else {
+                status.textContent = 'WebSocket: Disconnected';
+                status.className = 'ws-status ws-disconnected';
+            }
+        }
+
+        function handleWebSocketMessage(message) {
+            switch(message.type) {
+                case 'connected':
+                    addUpdate(message.message, 'success');
+                    break;
+                case 'scraping_update':
+                    const data = message.data;
+                    if (data.status === 'started') {
+                        addUpdate(`Started scraping: ${data.url}`, 'progress');
+                    } else if (data.status === 'completed') {
+                        addUpdate(`Completed scraping: ${data.url}`, 'success');
+                    }
+                    break;
+                case 'batch_progress':
+                    const progressData = message.data;
+                    updateBatchProgress(progressData.progress, progressData.completed, progressData.total, progressData.current);
+                    addUpdate(`Batch progress: ${progressData.completed}/${progressData.total} - ${progressData.current}`, 'progress');
+                    break;
+                case 'error':
+                    const errorData = message.data;
+                    addUpdate(`Error scraping ${errorData.url}: ${errorData.error}`, 'error');
+                    break;
+                case 'echo':
+                    console.log('Echo message:', message);
+                    break;
+            }
+        }
+
+        function addUpdate(message, type) {
+            const updatesContainer = document.getElementById('liveUpdates');
+            const updateItem = document.createElement('div');
+            updateItem.className = `update-item update-${type}`;
+            updateItem.innerHTML = `
+                <div style="font-size: 0.9rem; color: #9ca3af;">${new Date().toLocaleTimeString()}</div>
+                <div>${message}</div>
+            `;
+            updatesContainer.appendChild(updateItem);
+            updatesContainer.scrollTop = updatesContainer.scrollHeight;
+        }
+
+        function clearUpdates() {
+            document.getElementById('liveUpdates').innerHTML = '<p>Updates cleared...</p>';
+        }
+
+        function updateBatchProgress(progress, completed, total, current) {
+            const progressBar = document.getElementById('batchProgress');
+            const progressFill = document.getElementById('progressFill');
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = `${progress}%`;
+            
+            if (completed >= total) {
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 3000);
+            }
+        }
+
         function switchTab(tabName) {
             // Hide tabs
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -431,6 +659,31 @@
                 showError('statsResult', 'Network error: ' + error.message);
             }
         }
+
+        async function exportSingleCSV() {
+            const url = document.getElementById('singleUrl').value;
+            if (!url) {
+                alert('Please enter a URL first.');
+                return;
+            }
+
+            window.open(`/api/v1/export/csv?url=${encodeURIComponent(url)}`, '_blank');
+        }
+
+        async function exportSingleJSON() {
+            const url = document.getElementById('singleUrl').value;
+            if (!url) {
+                alert('Please enter a URL first.');
+                return;
+            }
+
+            window.open(`/api/v1/export/json?url=${encodeURIComponent(url)}`, '_blank');
+        }
+
+        // Initialize WebSocket connection when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            connectWebSocket();
+        });
     </script>
 </body>
 </html> 
